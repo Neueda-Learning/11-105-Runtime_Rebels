@@ -1,0 +1,48 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: portfolio-manager-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-portfolio_manager}
+      MYSQL_USER: ${DB_USERNAME:-portfolio_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-portfolio_pass}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_pass}
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD:-root_pass}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - portfolio-net
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: portfolio-manager-app
+    restart: unless-stopped
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/${DB_NAME:-portfolio_manager}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DB_USERNAME: ${DB_USERNAME:-portfolio_user}
+      DB_PASSWORD: ${DB_PASSWORD:-portfolio_pass}
+      SERVER_PORT: 8080
+      BASE_CURRENCY: ${BASE_CURRENCY:-INR}
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - portfolio-net
+
+volumes:
+  mysql_data:
+
+networks:
+  portfolio-net:
+    driver: bridge
