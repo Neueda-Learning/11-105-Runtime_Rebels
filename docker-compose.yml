@@ -33,7 +33,7 @@ services:
       SERVER_PORT: 8080
       BASE_CURRENCY: ${BASE_CURRENCY:-INR}
     ports:
-      - "${APP_PORT:-8080}:8080"
+      - "${APP_PORT:-8083}:8080"
     depends_on:
       mysql:
         condition: service_healthy
