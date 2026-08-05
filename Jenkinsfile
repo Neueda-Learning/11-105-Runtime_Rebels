@@ -27,7 +27,8 @@ pipeline {
             steps {
                 sh '''
                     ${DOCKER_COMPOSE_CMD} version >/dev/null 2>&1 || DOCKER_COMPOSE_CMD="docker-compose"
-                    ${DOCKER_COMPOSE_CMD} down || true
+                    ${DOCKER_COMPOSE_CMD} down --remove-orphans || true
+                    docker rm -f portfolio-manager-mysql portfolio-manager-app portfolio-manager-frontend 2>/dev/null || true
                 '''
             }
         }
@@ -45,7 +46,7 @@ pipeline {
             steps {
                 sh '''
                     ${DOCKER_COMPOSE_CMD} version >/dev/null 2>&1 || DOCKER_COMPOSE_CMD="docker-compose"
-                    ${DOCKER_COMPOSE_CMD} up -d
+                    ${DOCKER_COMPOSE_CMD} up -d --force-recreate --remove-orphans
                 '''
             }
         }
