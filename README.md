@@ -26,11 +26,12 @@ without reworking existing pieces.
 6. [Entity-Relationship Diagram](#entity-relationship-diagram)
 7. [Core Domain Logic](#core-domain-logic)
 8. [API Overview](#api-overview)
-9. [Running the Project](#running-the-project)
-10. [Configuration](#configuration)
-11. [Mock/Test Data](#mocktest-data)
-12. [Design Decisions & Trade-offs](#design-decisions--trade-offs)
-13. [Roadmap / Future Iterations](#roadmap--future-iterations)
+9. [Frontend Enterprise System Design](#frontend-enterprise-system-design)
+10. [Running the Project](#running-the-project)
+11. [Configuration](#configuration)
+12. [Mock/Test Data](#mocktest-data)
+13. [Design Decisions & Trade-offs](#design-decisions--trade-offs)
+14. [Roadmap / Future Iterations](#roadmap--future-iterations)
 
 ---
 
@@ -493,6 +494,213 @@ app is running. Summary:
 | GET/PUT| `/api/settings/base-currency`                      | get/set base currency                          |
 | GET    | `/api/exchange-rates`                              | list configured rates                          |
 | PUT    | `/api/exchange-rates/{code}`                       | create/update a rate                           |
+
+---
+
+## Frontend Enterprise System Design
+
+The frontend (`Frontend/`) is designed as a modular React SPA that prioritizes
+portfolio-readability, operational reliability, and maintainable growth. The
+design below captures both current implementation and enterprise-grade standards
+to guide future iterations.
+
+### 1) Frontend architecture goals
+
+- **Fast comprehension**: dashboard-first UX where net worth, daily move, and next
+  milestone are visible within the first viewport.
+- **Contract resilience**: tolerate DTO field-name drift with centralized mapping
+  utilities (`pick(...)`) until backend contracts are locked.
+- **Operational safety**: deterministic API layer, consistent error handling,
+  and clear user feedback through toasts and empty/error states.
+- **Extensibility**: feature-oriented folders so teams can add modules (watchlist,
+  notifications, auth) with bounded impact.
+
+### 2) Logical frontend architecture
+
+```mermaid
+flowchart LR
+    U[User] --> R[Router
+    BrowserRouter + Route Tree]
+    R --> L[AppShell Layout
+    Sidebar + Topbar + Mobile Tabs]
+    L --> P[Page Modules
+    Dashboard | Investments | Transactions | Milestones | Settings]
+
+    P --> C[Shared UI Components
+    cards, drawers, dialogs, table, skeletons]
+    P --> X[App Context
+    theme, baseCurrency, toast bus]
+    P --> H[Data Hook
+    useAsync lifecycle]
+    H --> A[API Client
+    axios instance + interceptors]
+    A --> B[(Spring Boot REST API)]
+
+    style A fill:#0ea5e9,color:#fff
+    style X fill:#10b981,color:#fff
+    style P fill:#4f46e5,color:#fff
+```
+
+### 3) Runtime bootstrap flow
+
+```mermaid
+sequenceDiagram
+    participant Browser
+    participant Main as main.jsx
+    participant Ctx as AppProvider
+    participant App as App Routes
+    participant API as Backend API
+
+    Browser->>Main: Load bundle
+    Main->>Ctx: Mount BrowserRouter + AppProvider
+    Ctx->>API: GET /api/settings/base-currency
+    API-->>Ctx: baseCurrency
+    Ctx->>App: Provide theme + baseCurrency + toasts
+    App->>Browser: Render AppShell + initial route
+```
+
+### 4) Page-to-data flow (current behavior)
+
+- **Dashboard**:
+  calls `GET /api/dashboard`, `GET /api/dashboard/performance`, and recent
+  transactions; also supports `POST /api/dashboard/snapshot` for a manual snapshot.
+- **Investments**:
+  type-filtered listing, create/update/delete workflows, and manual market price
+  refresh through `PATCH /api/investments/{id}/price`.
+- **Transactions**:
+  ledger view with create workflow per investment using
+  `POST /api/investments/{id}/transactions`.
+- **Milestones**:
+  list/create/delete milestone operations with progress visualization.
+- **Settings**:
+  theme, base currency update, and exchange-rate updates.
+
+### 5) Request lifecycle and error model
+
+```mermaid
+flowchart TD
+    UI[User action on page] --> HOOK[useAsync or submit handler]
+    HOOK --> CLIENT[axios client.js]
+    CLIENT --> API[(REST endpoint)]
+    API -->|2xx| OK[Resolve data]
+    API -->|4xx/5xx/network| ERR[Response interceptor normalizes message]
+    OK --> RENDER[Render data + success toast]
+    ERR --> FAIL[ErrorState or error toast + retry path]
+
+    style ERR fill:#ef4444,color:#fff
+    style OK fill:#22c55e,color:#fff
+```
+
+Standards:
+
+- Every mutating action must expose a deterministic success/error toast.
+- Every data-loading page must provide loading, empty, and error states.
+- Every API call must flow through a single client (`src/api/client.js`) to keep
+  headers, base URL, and error normalization centralized.
+
+### 6) Enterprise folder boundaries
+
+Recommended ownership model for `Frontend/src`:
+
+- `api/`: transport contract and endpoint wrappers only.
+- `context/`: cross-cutting application concerns (theme, base currency, toast bus).
+- `pages/`: route-level orchestration and business flow wiring.
+- `components/`: pure/reusable UI and feature components.
+- `utils/`: formatting, mapping, and stateless helpers.
+
+This aligns with a domain-driven frontend model where route modules orchestrate,
+shared components remain mostly presentational, and API logic never leaks into UI
+building blocks.
+
+### 7) State management strategy
+
+- **Global state (Context)**: theme, user-level display preferences, global toasts,
+  and base currency.
+- **Server state (`useAsync`)**: page/resource data loaded from backend endpoints.
+- **Local component state**: temporary UI states (drawer open/close, form drafts,
+  confirmation dialog selection).
+
+Growth path:
+
+- If caching, background revalidation, and query invalidation become complex,
+  migrate `useAsync` flows to a query library (TanStack Query) without changing
+  route structure.
+
+### 8) Security, compliance, and data protection requirements
+
+- Never persist secrets or tokens in source or local storage.
+- Keep `VITE_API_BASE_URL` environment-driven per environment.
+- Enforce strict input validation client-side for obvious data-shape issues,
+  while treating backend validation as source of truth.
+- Sanitize and safely render all user-generated strings (React default escaping
+  already protects against basic HTML injection).
+- Add Content Security Policy (CSP), `X-Content-Type-Options`, and `Referrer-Policy`
+  at the reverse-proxy layer in production.
+- Use HTTPS-only deployment for any non-local environment.
+
+### 9) Performance and scalability standards
+
+- Keep initial route payload lean; defer secondary panels until critical stats load.
+- Split heavyweight routes/components with lazy loading when bundle size grows.
+- Memoize expensive computed data and chart transformations.
+- Use pagination/virtualization for long investment and transaction datasets.
+- Set explicit web-vitals targets:
+  - Largest Contentful Paint (LCP): < 2.5s
+  - Interaction to Next Paint (INP): < 200ms
+  - Cumulative Layout Shift (CLS): < 0.1
+
+### 10) Accessibility and UX quality baseline
+
+- WCAG 2.2 AA contrast for all text and controls in light and dark themes.
+- Keyboard navigation for drawers, dialogs, tab bars, and filters.
+- Proper `aria-*` labels for icon-only action buttons.
+- Screen-reader friendly error/success messaging for toast announcements.
+- Mobile-first layout parity with desktop for all core workflows.
+
+### 11) Testing strategy for enterprise readiness
+
+- **Unit tests**: formatting utilities, mapping helpers, and any non-trivial
+  calculation/transform logic.
+- **Component tests**: loading/empty/error/success rendering states.
+- **Integration tests**: page-level API interaction paths using mocked API server.
+- **E2E tests**: critical user journeys:
+  - add investment -> add transaction -> dashboard refresh
+  - change base currency -> totals and rates update
+  - create milestone -> progress shown on dashboard
+
+Minimum CI gate recommendation:
+
+- Lint + build must pass on pull request.
+- Test suite must pass with stable deterministic fixtures.
+- No high-severity dependency vulnerabilities in release branches.
+
+### 12) Observability and operational readiness
+
+- Instrument frontend error tracking (Sentry or equivalent) with route and action context.
+- Add request correlation IDs propagated from backend headers when available.
+- Capture key business telemetry:
+  dashboard load time, snapshot trigger success rate, transaction create failure rate.
+- Track release health for first 24h after deployment with alert thresholds.
+
+### 13) Delivery pipeline and environment strategy
+
+- **Local**: Vite dev server with `/api` proxy to Spring Boot.
+- **Build**: static asset build (`npm run build`) with environment-specific API base URL.
+- **Deploy**: CDN/static hosting or containerized Nginx serving `dist`.
+- **Versioning**: semantic version tags aligned to backend release notes.
+- **Rollback**: immutable artifact rollback policy for failed releases.
+
+### 14) Frontend governance checklist (Definition of Done)
+
+Every frontend feature is production-ready only when all are true:
+
+- API contract documented and validated against Swagger/OpenAPI.
+- Loading, empty, error, and success states implemented.
+- Accessibility checks complete (keyboard + screen reader + contrast).
+- Unit/component/integration coverage added for non-trivial behavior.
+- Observability events and error monitoring wired.
+- Performance impact reviewed (bundle and runtime).
+- Security review completed for input handling and configuration.
 
 ---
 
