@@ -21,34 +21,34 @@ export default {
           sunken: 'rgb(var(--paper-sunken) / <alpha-value>)',
         },
         line: 'rgb(var(--line) / <alpha-value>)',
-        gold: {
-          DEFAULT: '#CBA35C',
-          soft: '#E4CE9B',
-          deep: '#9C7B3D',
+        rose: {
+          DEFAULT: '#E649A1',
+          soft: '#F39BC7',
+          deep: '#C92E86',
         },
         jade: {
-          DEFAULT: '#4FA378',
-          soft: '#8FCBAA',
-          deep: '#336E52',
+          DEFAULT: '#10B981',
+          soft: '#6EE7B7',
+          deep: '#059669',
         },
         brick: {
-          DEFAULT: '#B85C56',
-          soft: '#DA9A94',
-          deep: '#7E3B36',
+          DEFAULT: '#F06292',
+          soft: '#F7A8C7',
+          deep: '#D13D74',
         },
         violet: {
-          DEFAULT: '#7C6FBE',
-          soft: '#B4ACDA',
-          deep: '#4F4480',
+          DEFAULT: '#B48CFF',
+          soft: '#DEC9FF',
+          deep: '#8E63F4',
         },
       },
       boxShadow: {
-        glass: '0 1px 0 0 rgba(255,255,255,0.06) inset, 0 20px 50px -20px rgba(0,0,0,0.55)',
-        'glass-sm': '0 1px 0 0 rgba(255,255,255,0.05) inset, 0 8px 24px -12px rgba(0,0,0,0.4)',
+        glass: '0 1px 0 0 rgba(255,255,255,0.08) inset, 0 20px 50px -20px rgba(76,22,95,0.55)',
+        'glass-sm': '0 1px 0 0 rgba(255,255,255,0.06) inset, 0 10px 28px -14px rgba(109,37,120,0.45)',
       },
       backgroundImage: {
         aurora:
-          'radial-gradient(120% 140% at 10% -10%, rgba(124,111,190,0.35) 0%, transparent 55%), radial-gradient(100% 120% at 100% 0%, rgba(203,163,92,0.25) 0%, transparent 50%), linear-gradient(180deg, rgba(10,14,23,1) 0%, rgba(10,14,23,1) 100%)',
+          'radial-gradient(120% 140% at 10% -10%, rgba(230,73,161,0.45) 0%, transparent 55%), radial-gradient(100% 120% at 100% 0%, rgba(142,99,244,0.35) 0%, transparent 50%), linear-gradient(180deg, rgba(26,12,36,1) 0%, rgba(16,8,24,1) 100%)',
       },
       borderRadius: {
         xl2: '1.25rem',
