@@ -10,7 +10,7 @@ const empty = {
   quantity: '',
   price: '',
   amount: '',
-  transactionDate: new Date().toISOString().slice(0, 10),
+  date: new Date().toISOString().slice(0, 10),
 }
 
 export default function TransactionDrawer({ open, onClose, onSubmit, investments = [] }) {
@@ -30,10 +30,10 @@ export default function TransactionDrawer({ open, onClose, onSubmit, investments
     e.preventDefault()
     onSubmit(form.investmentId, {
       type: form.type,
-      quantity: needsQuantityPrice ? Number(form.quantity) : 0,
-      price: needsQuantityPrice ? Number(form.price) : 0,
-      amount: form.amount ? Number(form.amount) : Number(form.quantity) * Number(form.price),
-      transactionDate: form.transactionDate,
+      quantity: needsQuantityPrice ? Number(form.quantity) : undefined,
+      price: needsQuantityPrice ? Number(form.price) : undefined,
+      amount: form.amount ? Number(form.amount) : undefined,
+      date: form.date,
     })
   }
 
@@ -45,7 +45,7 @@ export default function TransactionDrawer({ open, onClose, onSubmit, investments
       footer={
         <div className="flex justify-end gap-2">
           <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button className="bg-pink-300" onClick={submit}>Save transaction</Button>
+          <Button onClick={submit}>Save transaction</Button>
         </div>
       }
     >
@@ -81,7 +81,7 @@ export default function TransactionDrawer({ open, onClose, onSubmit, investments
           </Field>
         )}
         <Field label="Date">
-          <input required type="date" className={inputClass} value={form.transactionDate} onChange={(e) => set('transactionDate', e.target.value)} />
+          <input required type="date" className={inputClass} value={form.date} onChange={(e) => set('date', e.target.value)} />
         </Field>
       </form>
     </Drawer>
