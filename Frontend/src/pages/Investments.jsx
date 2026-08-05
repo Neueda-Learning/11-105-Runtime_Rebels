@@ -7,6 +7,7 @@ import {
   updateInvestment,
   deleteInvestment,
   refreshInvestmentPrice,
+  createTransaction,
 } from '../api/client.js'
 import { useApp } from '../context/AppContext.jsx'
 import { Button, ConfirmDialog, ErrorState } from '../components/ui.jsx'
@@ -33,8 +34,26 @@ export default function Investments() {
         await updateInvestment(pick(drawer.initial, ['id']), payload)
         push('Investment updated.')
       } else {
-        await createInvestment(payload)
-        push('Investment added to your portfolio.')
+        const existing = findMatchingHolding(investments, payload)
+
+        if (existing && isStockOrEtf(payload.type)) {
+          const investmentId = pick(existing, ['id'])
+          const quantity = Number(payload.quantity || 0)
+          const buyPrice = Number(payload.avgBuyPrice || 0)
+          const today = new Date().toISOString().slice(0, 10)
+
+          await createTransaction(investmentId, {
+            type: 'BUY',
+            quantity,
+            price: buyPrice,
+            amount: quantity * buyPrice,
+            transactionDate: today,
+          })
+          push('Existing holding found. Added quantity to the same position.')
+        } else {
+          await createInvestment(payload)
+          push('Investment added to your portfolio.')
+        }
       }
       setDrawer({ open: false, initial: null })
       refetch()
@@ -110,6 +129,7 @@ export default function Investments() {
       <InvestmentDrawer
         open={drawer.open}
         initial={drawer.initial}
+        investments={investments}
         onClose={() => setDrawer({ open: false, initial: null })}
         onSubmit={handleSubmit}
       />
@@ -123,4 +143,27 @@ export default function Investments() {
       />
     </div>
   )
+}
+
+function isStockOrEtf(type) {
+  return type === 'STOCK' || type === 'ETF'
+}
+
+function normalize(value) {
+  return String(value || '').trim().toLowerCase()
+}
+
+function findMatchingHolding(investments, payload) {
+  const symbol = normalize(payload.symbol)
+  const type = normalize(payload.type)
+  const country = normalize(payload.country)
+  const currency = normalize(payload.currency)
+
+  return investments.find((inv) => {
+    const invSymbol = normalize(pick(inv, ['symbol', 'ticker']))
+    const invType = normalize(pick(inv, ['type', 'investmentType']))
+    const invCountry = normalize(pick(inv, ['country', 'market']))
+    const invCurrency = normalize(pick(inv, ['currency']))
+    return invSymbol === symbol && invType === type && invCountry === country && invCurrency === currency
+  })
 }
