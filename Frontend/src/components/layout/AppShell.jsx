@@ -1,7 +1,8 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { LayoutDashboard, Wallet, Flag, ArrowLeftRight, Settings, Moon, Sun, Laptop } from 'lucide-react'
+import { LayoutDashboard, Wallet, Flag, ArrowLeftRight, Settings } from 'lucide-react'
 import clsx from 'clsx'
 import { useApp } from '../../context/AppContext.jsx'
+import ThemeSwitcher from '../theme/ThemeSwitcher.jsx'
 
 const NAV = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
@@ -30,9 +31,9 @@ export default function AppShell() {
 
 function DesktopSidebar() {
   return (
-    <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-line px-4 py-6 md:flex">
+    <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-line bg-gradient-to-b from-paper-raised/70 via-paper/55 to-paper/35 px-4 py-6 md:flex">
       <div className="mb-8 flex items-center gap-2 px-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-rose-300 to-plum-300 font-display text-sm font-semibold text-[#151109]">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-rose-soft to-violet-soft font-display text-sm font-semibold text-[#2b1132]">
           W
         </div>
         <span className="font-display text-base tracking-tight">Wealth Ledger</span>
@@ -47,7 +48,7 @@ function DesktopSidebar() {
               clsx(
                 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition',
                 isActive
-                  ? 'bg-paper-sunken text-ink'
+                  ? 'bg-gradient-to-r from-rose/20 to-violet/20 text-ink'
                   : 'text-ink-faint hover:bg-paper-sunken hover:text-ink'
               )
             }
@@ -87,26 +88,17 @@ function MobileTabBar() {
 
 function Topbar() {
   const { theme, setTheme } = useApp()
-  const cycle = { light: 'dark', dark: 'system', system: 'light' }
-  const icon = { light: Sun, dark: Moon, system: Laptop }[theme]
-  const Icon = icon
 
   return (
     <header className="sticky top-0 z-20 flex items-center justify-between border-b border-line bg-paper/80 px-4 py-3 backdrop-blur sm:px-6 lg:px-8">
       <div className="md:hidden flex items-center gap-2">
-        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-rose-300 to-plum-300 font-display text-xs font-semibold text-[#151109]">
+        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-rose-soft to-violet-soft font-display text-xs font-semibold text-[#2b1132]">
           W
         </div>
         <span className="font-display text-sm">Wealth Ledger</span>
       </div>
       <div className="hidden md:block" />
-      <button
-        onClick={() => setTheme(cycle[theme])}
-        className="flex h-9 w-9 items-center justify-center rounded-full border border-line text-ink-faint hover:text-ink"
-        title={`Theme: ${theme}`}
-      >
-        <Icon className="h-4 w-4" />
-      </button>
+      <ThemeSwitcher theme={theme} setTheme={setTheme} compact />
     </header>
   )
 }
