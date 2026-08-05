@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, ArrowDownLeft, ArrowUpRight, Banknote, PiggyBank } from 'lucide-react'
+import { Plus, ArrowDownLeft, ArrowUpRight, Banknote, PiggyBank, Download } from 'lucide-react'
 import { useAsync } from '../api/hooks.js'
 import { listAllTransactions, listInvestments, createTransaction } from '../api/client.js'
 import { useApp } from '../context/AppContext.jsx'
@@ -7,6 +7,7 @@ import { Button, Card, ErrorState, EmptyState, Skeleton } from '../components/ui
 import TransactionDrawer from '../components/transactions/TransactionDrawer.jsx'
 import { pick, formatCurrency, formatDate } from '../utils/format.js'
 import { getApiErrorMessage } from '../utils/validation.js'
+import { exportTransactionsToCSV } from '../utils/export.js'
 
 const TYPE_META = {
   BUY: { icon: ArrowDownLeft, tone: 'text-jade' },
@@ -38,6 +39,19 @@ export default function Transactions() {
     }
   }
 
+  function handleExport() {
+    if (transactions.length === 0) {
+      push('No transactions to export.', 'error')
+      return
+    }
+    try {
+      exportTransactionsToCSV(transactions, baseCurrency)
+      push('Transactions exported successfully.')
+    } catch (e) {
+      push('Failed to export transactions.', 'error')
+    }
+  }
+
   if (tx.error) return <ErrorState message={tx.error.message} onRetry={tx.refetch} />
 
   return (
@@ -47,13 +61,23 @@ export default function Transactions() {
           <h1 className="font-display text-2xl text-ink">Transactions</h1>
           <p className="text-sm text-ink-faint">Buys, sells, deposits, withdrawals and interest — your full ledger.</p>
         </div>
-        <Button
-          className="!bg-none !bg-pink-500 !text-white shadow-glass-sm ring-1 ring-pink-400/40 hover:!bg-pink-600 dark:!bg-pink-500 dark:hover:!bg-pink-600 dark:ring-pink-400/35"
-          onClick={() => setOpen(true)}
-          disabled={investments.length === 0}
-        >
-          <Plus className="h-4 w-4" /> Record transaction
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="ghost"
+            onClick={handleExport}
+            disabled={tx.loading || transactions.length === 0}
+            title="Export transactions to CSV"
+          >
+            <Download className="h-4 w-4" /> Export CSV
+          </Button>
+          <Button
+            className="!bg-none !bg-pink-500 !text-white shadow-glass-sm ring-1 ring-pink-400/40 hover:!bg-pink-600 dark:!bg-pink-500 dark:hover:!bg-pink-600 dark:ring-pink-400/35"
+            onClick={() => setOpen(true)}
+            disabled={investments.length === 0}
+          >
+            <Plus className="h-4 w-4" /> Record transaction
+          </Button>
+        </div>
       </div>
 
       <Card className="p-0">

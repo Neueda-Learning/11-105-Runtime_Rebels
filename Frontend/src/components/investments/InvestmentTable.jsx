@@ -1,9 +1,9 @@
-import { Pencil, Trash2, RefreshCw } from 'lucide-react'
+import { Pencil, Trash2, RefreshCw, ChevronUp, ChevronDown } from 'lucide-react'
 import { pick, formatCurrency, formatPercent, classForChange } from '../../utils/format.js'
 import { Badge, EmptyState, Skeleton } from '../ui.jsx'
 import { Wallet } from 'lucide-react'
 
-export default function InvestmentTable({ investments, loading, onEdit, onDelete, onRefreshPrice }) {
+export default function InvestmentTable({ investments, loading, sortConfig, onSort, onEdit, onDelete, onRefreshPrice }) {
   if (loading) {
     return (
       <div className="space-y-2">
@@ -73,12 +73,12 @@ export default function InvestmentTable({ investments, loading, onEdit, onDelete
         <table className="w-full min-w-[720px] text-sm">
           <thead>
             <tr className="border-b border-line bg-paper-sunken/60 text-left text-xs font-semibold uppercase tracking-wide text-ink-faint">
-              <th className="px-4 py-3">Name</th>
+              <SortableHeader label="Name" sortKey="name" sortConfig={sortConfig} onSort={onSort} />
               <th className="px-4 py-3">Type</th>
               <th className="px-4 py-3">Market</th>
-              <th className="px-4 py-3 text-right">Invested</th>
-              <th className="px-4 py-3 text-right">Current value</th>
-              <th className="px-4 py-3 text-right">P/L</th>
+              <SortableHeader label="Invested" sortKey="invested" sortConfig={sortConfig} onSort={onSort} align="right" />
+              <SortableHeader label="Current value" sortKey="current" sortConfig={sortConfig} onSort={onSort} align="right" />
+              <SortableHeader label="P/L" sortKey="plPct" sortConfig={sortConfig} onSort={onSort} align="right" />
               <th className="px-4 py-3" />
             </tr>
           </thead>
@@ -159,3 +159,41 @@ function IconBtn({ children, onClick, title, tone }) {
     </button>
   )
 }
+
+function SortableHeader({ label, sortKey, sortConfig, onSort, align = 'left' }) {
+  const isActive = sortConfig?.key === sortKey
+  const direction = sortConfig?.direction
+
+  return (
+    <th className={`px-4 py-3 ${align === 'right' ? 'text-right' : ''}`}>
+      <button
+        onClick={() => onSort(sortKey)}
+        title={`Click to sort by ${label}`}
+        className={`group inline-flex items-center gap-2 transition-all rounded px-3 py-1.5 -mx-3 -my-1.5 cursor-pointer ${
+          isActive
+            ? 'text-ink font-bold bg-paper-sunken/50'
+            : 'hover:text-ink hover:font-semibold hover:bg-paper-sunken/30'
+        }`}
+      >
+        <span>{label}</span>
+        <span className={`relative flex flex-col h-5 w-5 transition-opacity ${
+          isActive ? 'opacity-100' : 'opacity-60 group-hover:opacity-90'
+        }`}>
+          {isActive ? (
+            direction === 'asc' ? (
+              <ChevronUp className="h-5 w-5 text-ink font-extrabold stroke-[3]" />
+            ) : (
+              <ChevronDown className="h-5 w-5 text-ink font-extrabold stroke-[3]" />
+            )
+          ) : (
+            <>
+              <ChevronUp className="h-2.5 w-5 -mb-0.5 text-ink-faint stroke-[2.5]" />
+              <ChevronDown className="h-2.5 w-5 text-ink-faint stroke-[2.5]" />
+            </>
+          )}
+        </span>
+      </button>
+    </th>
+  )
+}
+
