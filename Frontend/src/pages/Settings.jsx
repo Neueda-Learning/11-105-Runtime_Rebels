@@ -4,12 +4,13 @@ import { useAsync } from '../api/hooks.js'
 import { listExchangeRates, setExchangeRate, setBaseCurrency } from '../api/client.js'
 import { useApp } from '../context/AppContext.jsx'
 import { Card, SectionHeading, Button, Field, inputClass, ErrorState, Skeleton, EmptyState } from '../components/ui.jsx'
+import ThemeSwitcher from '../components/theme/ThemeSwitcher.jsx'
 import { pick } from '../utils/format.js'
 
 const CURRENCIES = ['INR', 'USD', 'GBP', 'EUR', 'CNY', 'JPY', 'AED']
 
 export default function Settings() {
-  const { baseCurrency, setBaseCurrency: setBaseCurrencyCtx, push } = useApp()
+  const { baseCurrency, setBaseCurrency: setBaseCurrencyCtx, theme, setTheme, push } = useApp()
   const { data, loading, error, refetch } = useAsync(listExchangeRates, [])
   const rates = Array.isArray(data) ? data : pick(data, ['rates', 'exchangeRates'], []) || []
   
@@ -56,6 +57,14 @@ export default function Settings() {
       </div>
 
       <Card>
+        <SectionHeading eyebrow="Appearance" title="Theme" />
+        <p className="mb-4 text-sm text-ink-faint">
+          Choose your preferred look. System follows your device preference automatically.
+        </p>
+        <ThemeSwitcher theme={theme} setTheme={setTheme} />
+      </Card>
+
+      <Card>
         <SectionHeading eyebrow="Preference" title="Base currency" />
         <p className="mb-4 text-sm text-ink-faint">
           All totals, P/L and milestones are shown in this currency, converted from each investment's original currency.
@@ -68,7 +77,10 @@ export default function Settings() {
               ))}
             </select>
           </Field>
-          <Button className="bg-pink-300" onClick={saveBaseCurrency}>
+          <Button
+            className="!bg-none !bg-pink-500 !text-white shadow-glass-sm ring-1 ring-pink-400/40 hover:!bg-pink-600 dark:!bg-pink-500 dark:hover:!bg-pink-600 dark:ring-pink-400/35"
+            onClick={saveBaseCurrency}
+          >
             <Save className="h-4 w-4" /> Save
           </Button>
         </div>
