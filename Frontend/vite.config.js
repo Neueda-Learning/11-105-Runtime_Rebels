@@ -27,8 +27,9 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://host.docker.internal:8080',
-        // target: 'http://localhost:8080',
+        // Local dev on Windows/macOS/Linux: backend runs on localhost:8080.
+        // host.docker.internal is only needed when frontend itself runs inside Docker.
+        target: 'http://localhost:8080',
         changeOrigin: true,
       },
     },
