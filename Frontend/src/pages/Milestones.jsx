@@ -15,7 +15,6 @@ export default function Milestones() {
   const { data, loading, error, refetch } = useAsync(listMilestones, [])
 
   const milestones = Array.isArray(data) ? data : pick(data, ['milestones', 'content'], []) || []
-  console.log(milestones)
 
   async function handleCreate(e) {
     e.preventDefault()
@@ -52,7 +51,10 @@ export default function Milestones() {
           <h1 className="font-display text-2xl text-ink">Milestones</h1>
           <p className="text-sm text-ink-faint">Turn wealth into something tangible — track progress toward what matters.</p>
         </div>
-        <Button onClick={() => setOpen(true)}>
+        <Button
+          className="!bg-none !bg-pink-500 !text-white shadow-glass-sm ring-1 ring-pink-400/40 hover:!bg-pink-600 dark:!bg-pink-500 dark:hover:!bg-pink-600 dark:ring-pink-400/35"
+          onClick={() => setOpen(true)}
+        >
           <Plus className="h-4 w-4" /> New milestone
         </Button>
       </div>
@@ -66,7 +68,14 @@ export default function Milestones() {
           icon={Flag}
           title="No milestones yet"
           description="Add an aspirational milestone — a home down payment, a car, financial freedom — and watch your progress climb."
-          action={<Button onClick={() => setOpen(true)}><Plus className="h-4 w-4" /> Add your first milestone</Button>}
+          action={
+            <Button
+              className="!bg-none !bg-pink-500 !text-white shadow-glass-sm ring-1 ring-pink-400/40 hover:!bg-pink-600 dark:!bg-pink-500 dark:hover:!bg-pink-600 dark:ring-pink-400/35"
+              onClick={() => setOpen(true)}
+            >
+              <Plus className="h-4 w-4" /> Add your first milestone
+            </Button>
+          }
         />
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -88,14 +97,14 @@ export default function Milestones() {
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
-                <Flag className={`h-5 w-5 ${achieved ? 'text-gold' : 'text-ink-faint'}`} />
+                <Flag className={`h-5 w-5 ${achieved ? 'text-rose' : 'text-violet-deep dark:text-violet-soft'}`} />
                 <p className="mt-3 font-display text-base text-ink">{name}</p>
                 <p className="text-sm mb-2 text-ink-faint">{comparisonLabel}</p>
                 <p className="text-xs text-ink">Target {formatCurrency(target, baseCurrency, { decimals: 0 })}</p>
 
                 <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-paper-sunken">
                   <div
-                    className={`h-full rounded-full ${achieved ? 'bg-jade' : 'bg-gradient-to-r from-gold-deep to-gold'}`}
+                    className={`h-full rounded-full ${achieved ? 'bg-jade' : 'bg-gradient-to-r from-rose-deep to-violet'}`}
                     style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
                   />
                 </div>
@@ -103,7 +112,7 @@ export default function Milestones() {
                   <span className="text-ink-faint">
                     {achieved ? 'Achieved 🎉' : `${formatCurrency(target*(1-progress/100), baseCurrency, { decimals: 0 })} to go`}
                   </span>
-                  <span className="font-mono font-semibold text-gold-deep dark:text-gold">{progress.toFixed(0)}%</span>
+                  <span className="font-mono font-semibold text-rose-deep dark:text-violet-soft">{progress.toFixed(0)}%</span>
                 </div>
               </Card>
             )
@@ -118,7 +127,12 @@ export default function Milestones() {
         footer={
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreate}>Add milestone</Button>
+            <Button
+              className="!bg-none !bg-pink-500 !text-white shadow-glass-sm ring-1 ring-pink-400/40 hover:!bg-pink-600 dark:!bg-pink-500 dark:hover:!bg-pink-600 dark:ring-pink-400/35"
+              onClick={handleCreate}
+            >
+              Add milestone
+            </Button>
           </div>
         }
       >
