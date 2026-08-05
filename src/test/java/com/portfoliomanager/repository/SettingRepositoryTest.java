@@ -1,0 +1,73 @@
+package com.portfoliomanager.repository;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.TestPropertySource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+@JdbcTest
+@Import(SettingRepository.class)
+@TestPropertySource(properties = "spring.flyway.enabled=false")
+class SettingRepositoryTest {
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private SettingRepository repository;
+
+    @BeforeEach
+    void setupSchema() {
+        jdbcTemplate.execute("DROP TABLE IF EXISTS app_settings");
+        jdbcTemplate.execute("""
+                CREATE TABLE app_settings (
+                    setting_key VARCHAR(50) NOT NULL PRIMARY KEY,
+                    setting_value VARCHAR(100) NOT NULL,
+                    updated_at TIMESTAMP
+                )
+                """);
+    }
+
+    @Test
+    void get_returnsEmptyForMissingKey() {
+        assertTrue(repository.get("base_currency").isEmpty());
+    }
+
+    @Test
+    void set_insertsWhenKeyMissing() {
+        repository.set("base_currency", "INR");
+
+        assertEquals("INR", repository.get("base_currency").orElseThrow());
+        assertEquals(1, countRows());
+    }
+
+    @Test
+    void set_updatesWhenKeyExists() {
+        jdbcTemplate.update("INSERT INTO app_settings (setting_key, setting_value, updated_at) VALUES (?, ?, ?)",
+                "base_currency", "INR", null);
+
+        repository.set("base_currency", "USD");
+
+        assertEquals("USD", repository.get("base_currency").orElseThrow());
+        assertEquals(1, countRows());
+    }
+
+    @Test
+    void get_returnsStoredValue() {
+        jdbcTemplate.update("INSERT INTO app_settings (setting_key, setting_value, updated_at) VALUES (?, ?, ?)",
+                "theme", "dark", null);
+
+        assertEquals("dark", repository.get("theme").orElseThrow());
+    }
+
+    private int countRows() {
+        Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM app_settings", Integer.class);
+        return count == null ? 0 : count;
+    }
+}
