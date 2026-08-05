@@ -4,7 +4,7 @@ import { useAsync } from '../api/hooks.js'
 import { listExchangeRates, setExchangeRate, setBaseCurrency } from '../api/client.js'
 import { useApp } from '../context/AppContext.jsx'
 import { Card, SectionHeading, Button, Field, inputClass, ErrorState, Skeleton, EmptyState } from '../components/ui.jsx'
-import ThemeSwitcher from '../components/theme/ThemeSwitcher.jsx'
+import ThemeSwitcher from '../context/ThemeSwitcher.jsx'
 import { pick } from '../utils/format.js'
 
 const CURRENCIES = ['INR', 'USD', 'GBP', 'EUR', 'CNY', 'JPY', 'AED']
