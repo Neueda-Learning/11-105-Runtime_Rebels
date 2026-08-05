@@ -12,7 +12,7 @@ const TYPE_META = {
   SELL: { icon: ArrowUpRight, tone: 'text-brick' },
   DEPOSIT: { icon: PiggyBank, tone: 'text-violet' },
   WITHDRAW: { icon: ArrowUpRight, tone: 'text-brick' },
-  INTEREST: { icon: Banknote, tone: 'text-gold-deep dark:text-gold' },
+  INTEREST: { icon: Banknote, tone: 'text-rose-deep dark:text-rose-soft' },
 }
 
 export default function Transactions() {
@@ -46,7 +46,11 @@ export default function Transactions() {
           <h1 className="font-display text-2xl text-ink">Transactions</h1>
           <p className="text-sm text-ink-faint">Buys, sells, deposits, withdrawals and interest — your full ledger.</p>
         </div>
-        <Button className="bg-pink-400" onClick={() => setOpen(true)} disabled={investments.length === 0}>
+        <Button
+          className="!bg-none !bg-pink-500 !text-white shadow-glass-sm ring-1 ring-pink-400/40 hover:!bg-pink-600 dark:!bg-pink-500 dark:hover:!bg-pink-600 dark:ring-pink-400/35"
+          onClick={() => setOpen(true)}
+          disabled={investments.length === 0}
+        >
           <Plus className="h-4 w-4" /> Record transaction
         </Button>
       </div>
