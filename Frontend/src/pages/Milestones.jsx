@@ -1,10 +1,35 @@
 import { useState } from 'react'
+import clsx from 'clsx'
 import { Plus, Flag, Trash2 } from 'lucide-react'
 import { useAsync } from '../api/hooks.js'
 import { listMilestones, createMilestone, deleteMilestone } from '../api/client.js'
 import { useApp } from '../context/AppContext.jsx'
-import { Card, Button, Drawer, Field, inputClass, ConfirmDialog, ErrorState, EmptyState, Skeleton } from '../components/ui.jsx'
+import { Card, Button, Drawer, Field, inputClass, invalidInputClass, ConfirmDialog, ErrorState, EmptyState, Skeleton } from '../components/ui.jsx'
 import { pick, formatCurrency, formatDate } from '../utils/format.js'
+import {
+  VALIDATION_MESSAGES,
+  getApiErrorMessage,
+  isPositiveNumber,
+  mapApiFieldErrors,
+  parseNumber,
+  toTrimmedString,
+} from '../utils/validation.js'
+
+function validate(form) {
+  const errors = {}
+
+  if (!toTrimmedString(form.name)) {
+    errors.name = VALIDATION_MESSAGES.required
+  }
+
+  if (!isPositiveNumber(form.thresholdValueBase)) {
+    errors.thresholdValueBase = form.thresholdValueBase
+      ? VALIDATION_MESSAGES.invalidAmount
+      : VALIDATION_MESSAGES.required
+  }
+
+  return errors
+}
 
 export default function Milestones() { 
   const { baseCurrency, push } = useApp()
@@ -12,22 +37,40 @@ export default function Milestones() {
   const [confirmDelete, setConfirmDelete] = useState(null)
   
   const [form, setForm] = useState({ name: '', thresholdValueBase: '' })
+  const [errors, setErrors] = useState({})
+  const [formError, setFormError] = useState('')
+  const [saving, setSaving] = useState(false)
   const { data, loading, error, refetch } = useAsync(listMilestones, [])
 
   const milestones = Array.isArray(data) ? data : pick(data, ['milestones', 'content'], []) || []
 
   async function handleCreate(e) {
     e.preventDefault()
+
+    const nextErrors = validate(form)
+    if (Object.values(nextErrors).some(Boolean)) {
+      setErrors(nextErrors)
+      return
+    }
+
     try {
-      await createMilestone({ name: form.name, thresholdValueBase: Number(form.thresholdValueBase),
+      setSaving(true)
+      setErrors({})
+      setFormError('')
+      await createMilestone({ name: toTrimmedString(form.name), thresholdValueBase: parseNumber(form.thresholdValueBase),
         comparisonLabel: 'New Milestone', thresholdDate: formatDate(new Date(), 'yyyy-MM-dd')
        })
       push('Milestone added.')
       setForm({ name: '', thresholdValueBase: '' })
+      setErrors({})
       setOpen(false)
       refetch()
     } catch (err) {
-      push(err.message, 'error')
+      setErrors(mapApiFieldErrors(err, { thresholdValueBase: 'thresholdValueBase', name: 'name' }))
+      setFormError(getApiErrorMessage(err, 'Unable to add milestone. Please review the form and try again.'))
+      push(getApiErrorMessage(err, 'Unable to add milestone.'), 'error')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -53,7 +96,11 @@ export default function Milestones() {
         </div>
         <Button
           className="!bg-none !bg-pink-500 !text-white shadow-glass-sm ring-1 ring-pink-400/40 hover:!bg-pink-600 dark:!bg-pink-500 dark:hover:!bg-pink-600 dark:ring-pink-400/35"
-          onClick={() => setOpen(true)}
+          onClick={() => {
+            setOpen(true)
+            setErrors({})
+            setFormError('')
+          }}
         >
           <Plus className="h-4 w-4" /> New milestone
         </Button>
@@ -71,7 +118,11 @@ export default function Milestones() {
           action={
             <Button
               className="!bg-none !bg-pink-500 !text-white shadow-glass-sm ring-1 ring-pink-400/40 hover:!bg-pink-600 dark:!bg-pink-500 dark:hover:!bg-pink-600 dark:ring-pink-400/35"
-              onClick={() => setOpen(true)}
+              onClick={() => {
+                setOpen(true)
+                setErrors({})
+                setFormError('')
+              }}
             >
               <Plus className="h-4 w-4" /> Add your first milestone
             </Button>
@@ -130,31 +181,39 @@ export default function Milestones() {
             <Button
               className="!bg-none !bg-pink-500 !text-white shadow-glass-sm ring-1 ring-pink-400/40 hover:!bg-pink-600 dark:!bg-pink-500 dark:hover:!bg-pink-600 dark:ring-pink-400/35"
               onClick={handleCreate}
+              disabled={saving}
             >
-              Add milestone
+              {saving ? 'Saving...' : 'Add milestone'}
             </Button>
           </div>
         }
       >
-        <form onSubmit={handleCreate}>
-          <Field label="Name" hint="e.g. Ferrari 296 GTB, Down payment, Financial freedom">
+        <form onSubmit={handleCreate} noValidate>
+          <Field label="Name" hint="e.g. Ferrari 296 GTB, Down payment, Financial freedom" error={errors.name}>
             <input
-              required
-              className={inputClass}
+              className={clsx(inputClass, errors.name && invalidInputClass)}
               value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              onChange={(e) => {
+                setErrors((prev) => ({ ...prev, name: '' }))
+                setFormError('')
+                setForm((f) => ({ ...f, name: e.target.value }))
+              }}
             />
           </Field>
-          <Field label={`Target amount (${baseCurrency})`}>
+          <Field label={`Target amount (${baseCurrency})`} error={errors.thresholdValueBase}>
             <input
-              required
               type="number"
               step="any"
-              className={inputClass}
+              className={clsx(inputClass, errors.thresholdValueBase && invalidInputClass)}
               value={form.thresholdValueBase}
-              onChange={(e) => setForm((f) => ({ ...f, thresholdValueBase: e.target.value }))}
+              onChange={(e) => {
+                setErrors((prev) => ({ ...prev, thresholdValueBase: '' }))
+                setFormError('')
+                setForm((f) => ({ ...f, thresholdValueBase: e.target.value }))
+              }}
             />
           </Field>
+          {formError && <p className="text-sm text-brick">{formError}</p>}
         </form>
       </Drawer>
 

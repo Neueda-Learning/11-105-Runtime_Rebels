@@ -178,13 +178,14 @@ export function ConfirmDialog({ open, title, description, onConfirm, onCancel, c
   )
 }
 
-export function Field({ label, children, hint }) {
+export function Field({ label, children, hint, error, className }) {
   return (
-    <label className="mb-4 block">
+    <label className={clsx('mb-4 block', className)}>
       <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ink-faint">
         {label}
       </span>
       {children}
+      {error && <span className="mt-1 block text-xs font-medium text-brick">{error}</span>}
       {hint && <span className="mt-1 block text-xs text-ink-faint">{hint}</span>}
     </label>
   )
@@ -192,3 +193,6 @@ export function Field({ label, children, hint }) {
 
 export const inputClass =
   'w-full rounded-lg border border-line bg-paper px-3 py-2.5 text-sm text-ink outline-none transition focus:border-violet focus:ring-2 focus:ring-violet/25'
+
+export const invalidInputClass = 'border-brick/70 ring-2 ring-brick/15 focus:border-brick focus:ring-brick/25'
+

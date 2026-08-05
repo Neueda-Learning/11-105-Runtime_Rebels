@@ -7,15 +7,31 @@ const http = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
+function parseFieldErrors(details = []) {
+  return details.reduce((acc, detail) => {
+    if (typeof detail !== 'string') return acc
+    const [field, ...rest] = detail.split(':')
+    if (!field || rest.length === 0) return acc
+    acc[field.trim()] = rest.join(':').trim()
+    return acc
+  }, {})
+}
+
 http.interceptors.response.use(
   (res) => res,
   (err) => {
+    const data = err?.response?.data
+    const details = Array.isArray(data?.details) ? data.details : []
     const message =
-      err?.response?.data?.message ||
-      err?.response?.data?.error ||
+      data?.message ||
+      data?.error ||
       err?.message ||
       'Something went wrong talking to the server.'
-    return Promise.reject(new Error(message))
+    const enriched = new Error(message)
+    enriched.status = err?.response?.status
+    enriched.details = details
+    enriched.fieldErrors = parseFieldErrors(details)
+    return Promise.reject(enriched)
   }
 )
 

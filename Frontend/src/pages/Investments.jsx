@@ -12,7 +12,9 @@ import { useApp } from '../context/AppContext.jsx'
 import { Button, ConfirmDialog, ErrorState } from '../components/ui.jsx'
 import InvestmentTable from '../components/investments/InvestmentTable.jsx'
 import InvestmentDrawer from '../components/investments/InvestmentDrawer.jsx'
+import PriceUpdateDrawer from '../components/investments/PriceUpdateDrawer.jsx'
 import { pick } from '../utils/format.js'
+import { getApiErrorMessage } from '../utils/validation.js'
 
 const TYPE_FILTERS = ['ALL', 'STOCK', 'ETF', 'FD', 'CASH']
 
@@ -21,13 +23,13 @@ export default function Investments() {
   const [typeFilter, setTypeFilter] = useState('ALL')
   const [drawer, setDrawer] = useState({ open: false, initial: null })
   const [confirmDelete, setConfirmDelete] = useState(null)
+  const [priceDrawer, setPriceDrawer] = useState({ open: false, investment: null })
 
   const params = typeFilter === 'ALL' ? {} : { type: typeFilter }
   const { data, loading, error, refetch } = useAsync(() => listInvestments(params), [typeFilter])
   const investments = Array.isArray(data) ? data : pick(data, ['investments', 'content'], []) || []
 
   async function handleSubmit(payload) {
-    console.log('Submitting investment:', payload)
     try {
       if (drawer.initial) {
         await updateInvestment(pick(drawer.initial, ['id']), payload)
@@ -39,7 +41,8 @@ export default function Investments() {
       setDrawer({ open: false, initial: null })
       refetch()
     } catch (e) {
-      push(e.message, 'error')
+      push(getApiErrorMessage(e, 'Unable to save investment.'), 'error')
+      throw e
     }
   }
 
@@ -50,21 +53,25 @@ export default function Investments() {
       setConfirmDelete(null)
       refetch()
     } catch (e) {
-      push(e.message, 'error')
+      push(getApiErrorMessage(e, 'Unable to remove investment.'), 'error')
     }
   }
 
-  async function handleRefreshPrice(inv) {
-    const id = pick(inv, ['id'])
-    const current = pick(inv, ['currentPrice', 'price'], 0)
-    const next = window.prompt('Enter latest market price / unit', current)
-    if (next === null) return
+  async function handleRefreshPrice(payload) {
+    const id = pick(priceDrawer.investment, ['id'])
+    if (!id) {
+      const error = new Error('Please select a valid investment.')
+      push(error.message, 'error')
+      throw error
+    }
     try {
-      await refreshInvestmentPrice(id, { currentPrice: Number(next) })
+      await refreshInvestmentPrice(id, payload)
       push('Price updated.')
+      setPriceDrawer({ open: false, investment: null })
       refetch()
     } catch (e) {
-      push(e.message, 'error')
+      push(getApiErrorMessage(e, 'Unable to update market price.'), 'error')
+      throw e
     }
   }
 
@@ -104,7 +111,7 @@ export default function Investments() {
         loading={loading}
         onEdit={(inv) => setDrawer({ open: true, initial: inv })}
         onDelete={(inv) => setConfirmDelete(inv)}
-        onRefreshPrice={handleRefreshPrice}
+        onRefreshPrice={(inv) => setPriceDrawer({ open: true, investment: inv })}
       />
 
       <InvestmentDrawer
@@ -112,6 +119,13 @@ export default function Investments() {
         initial={drawer.initial}
         onClose={() => setDrawer({ open: false, initial: null })}
         onSubmit={handleSubmit}
+      />
+
+      <PriceUpdateDrawer
+        open={priceDrawer.open}
+        investment={priceDrawer.investment}
+        onClose={() => setPriceDrawer({ open: false, investment: null })}
+        onSubmit={handleRefreshPrice}
       />
 
       <ConfirmDialog
