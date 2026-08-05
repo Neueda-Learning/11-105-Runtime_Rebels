@@ -77,7 +77,10 @@ export default function Investments() {
           <h1 className="font-display text-2xl text-ink">Investments</h1>
           <p className="text-sm text-ink-faint">Every stock, ETF, fixed deposit and cash holding, in one place.</p>
         </div>
-        <Button onClick={() => setDrawer({ open: true, initial: null })}>
+        <Button
+          className="!bg-none !bg-pink-500 !text-white shadow-glass-sm ring-1 ring-pink-400/40 hover:!bg-pink-600 dark:!bg-pink-500 dark:hover:!bg-pink-600 dark:ring-pink-400/35"
+          onClick={() => setDrawer({ open: true, initial: null })}
+        >
           <Plus className="h-4 w-4" /> Add investment
         </Button>
       </div>
