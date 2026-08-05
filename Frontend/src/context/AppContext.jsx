@@ -4,9 +4,15 @@ import { CheckCircle2, AlertCircle, X } from 'lucide-react'
 import { getBaseCurrency } from '../api/client'
 
 const AppCtx = createContext(null)
+const VALID_THEMES = new Set(['light', 'dark', 'system'])
+
+function getInitialTheme() {
+  const stored = localStorage.getItem('pm-theme')
+  return VALID_THEMES.has(stored) ? stored : 'system'
+}
 
 function useProvideTheme() {
-  const [theme, setTheme] = useState(() => localStorage.getItem('pm-theme') || 'system')
+  const [theme, setTheme] = useState(getInitialTheme)
 
   useEffect(() => {
     const root = document.documentElement
