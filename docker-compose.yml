@@ -42,14 +42,14 @@ services:
 
   frontend:
     build:
-      context: ./frontend  # Adjust this path if your frontend code is in a different folder
+      context: ./Frontend
       dockerfile: Dockerfile
     container_name: portfolio-manager-frontend
     restart: unless-stopped
     ports:
       - "${FRONTEND_PORT:-5173}:5173"
     environment:
-      - VITE_API_URL=http://localhost:8083 # Update if your frontend needs to point to the backend URL
+      - VITE_PROXY_TARGET=http://app:8080
     depends_on:
       - app
     networks:

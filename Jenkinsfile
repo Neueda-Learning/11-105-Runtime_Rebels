@@ -5,6 +5,7 @@ pipeline {
     environment {
         GIT_URL = 'https://github.com/Neueda-Learning/11-105-Runtime_Rebels.git'
         BRANCH = 'main'
+        DOCKER_COMPOSE_CMD = "docker compose"
     }
 
     stages {
@@ -24,19 +25,28 @@ pipeline {
 
         stage('Stop Existing Containers') {
             steps {
-                sh 'docker-compose down || true'
+                sh '''
+                    ${DOCKER_COMPOSE_CMD} version >/dev/null 2>&1 || DOCKER_COMPOSE_CMD="docker-compose"
+                    ${DOCKER_COMPOSE_CMD} down || true
+                '''
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker-compose build --no-cache'
+                sh '''
+                    ${DOCKER_COMPOSE_CMD} version >/dev/null 2>&1 || DOCKER_COMPOSE_CMD="docker-compose"
+                    ${DOCKER_COMPOSE_CMD} build --no-cache
+                '''
             }
         }
 
         stage('Deploy') {
             steps {
-                sh 'docker-compose up -d'
+                sh '''
+                    ${DOCKER_COMPOSE_CMD} version >/dev/null 2>&1 || DOCKER_COMPOSE_CMD="docker-compose"
+                    ${DOCKER_COMPOSE_CMD} up -d
+                '''
             }
         }
 
