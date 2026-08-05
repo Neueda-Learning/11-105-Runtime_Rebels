@@ -3,14 +3,14 @@ import { TrendingUp, TrendingDown, Flag, Clock, Trophy, Sparkles, ArrowDownLeft,
 import { Card, SectionHeading, Skeleton, EmptyState } from '../ui.jsx'
 import { pick, formatPercent, formatCurrency, formatDateTime, classForChange } from '../../utils/format.js'
 
-const ALLOC_COLORS = ['#CBA35C', '#7C6FBE', '#4FA378', '#B85C56', '#8FCBAA']
+const ALLOC_COLORS = ['#E649A1', '#B48CFF', '#F39BC7', '#8E63F4', '#F06292']
 
 const TYPE_META = {
   BUY: { icon: ArrowDownLeft, tone: 'text-jade' },
   SELL: { icon: ArrowUpRight, tone: 'text-brick' },
   DEPOSIT: { icon: PiggyBank, tone: 'text-violet' },
   WITHDRAW: { icon: ArrowUpRight, tone: 'text-brick' },
-  INTEREST: { icon: Banknote, tone: 'text-gold-deep dark:text-gold' },
+  INTEREST: { icon: Banknote, tone: 'text-rose-deep dark:text-rose' },
 }
 
 export function MoversCard({ investments = [], loading, currency }) {
@@ -165,7 +165,7 @@ export function NextMilestoneCard({
   return (
     <Card className="relative overflow-hidden">
       {/* Background Glow */}
-      <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-gold/10 blur-3xl" />
+      <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-rose/10 blur-3xl" />
 
       <SectionHeading
         eyebrow="Achievement"
@@ -174,8 +174,8 @@ export function NextMilestoneCard({
 
       <div className="mt-4 space-y-4">
         <div className="flex items-start gap-3">
-          <div className="rounded-xl bg-gold/10 p-3">
-            <Sparkles className="h-5 w-5 text-gold" />
+          <div className="rounded-xl bg-rose/10 p-3">
+            <Sparkles className="h-5 w-5 text-rose" />
           </div>
 
           <div className="flex-1">
@@ -194,7 +194,7 @@ export function NextMilestoneCard({
             Target Value
           </p>
 
-          <p className="mt-1 text-2xl font-bold text-gold-deep">
+          <p className="mt-1 text-2xl font-bold text-rose-deep">
             {formatCurrency(thresholdValueBase, currency, {
               decimals: 0,
             })}
@@ -205,14 +205,14 @@ export function NextMilestoneCard({
           <div className="mb-2 flex items-center justify-between text-sm">
             <span className="text-ink-faint">Progress</span>
 
-            <span className="font-semibold text-gold-deep">
+            <span className="font-semibold text-rose-deep">
               {progressPercent.toFixed(1)}%
             </span>
           </div>
 
           <div className="h-3 overflow-hidden rounded-full bg-paper-sunken">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-gold-deep to-gold transition-all duration-700"
+              className="h-full rounded-full bg-gradient-to-r from-rose-deep to-rose transition-all duration-700"
               style={{
                 width: `${Math.min(progressPercent, 100)}%`,
               }}
@@ -248,26 +248,26 @@ export function MilestoneSpotlight({ milestones = [], loading, currency }) {
       {!next ? (
         <EmptyState icon={Flag} title="No milestones yet" description="Set an aspirational milestone to make progress feel real." />
       ) : (
-        <div>
-          <div className="flex items-center gap-2 text-sm font-medium text-ink">
-            <Flag className="h-4 w-4 text-gold" />
-            {next.name}
-          </div>
-          {next.remaining !== null && (
-            <p className="mt-1 text-xs text-ink-faint">
-              {formatCurrency(next.remaining, currency, { decimals: 0 })} to go
-            </p>
-          )}
-          <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-paper-sunken">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-gold-deep to-gold"
-              style={{ width: `${Math.min(100, Math.max(0, next.progress))}%` }}
-            />
-          </div>
-          <p className="mt-1.5 text-right font-mono text-xs text-gold-deep dark:text-gold">
-            {next.progress.toFixed(0)}%
-          </p>
-        </div>
+       <div>
+           <div className="flex items-center gap-2 text-sm font-medium text-ink">
+             <Flag className="h-4 w-4 text-rose" />
+             {next.name}
+           </div>
+           {next.remaining !== null && (
+             <p className="mt-1 text-xs text-ink-faint">
+               {formatCurrency(next.remaining, currency, { decimals: 0 })} to go
+             </p>
+           )}
+           <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-paper-sunken">
+             <div
+               className="h-full rounded-full bg-gradient-to-r from-rose-deep to-rose"
+               style={{ width: `${Math.min(100, Math.max(0, next.progress))}%` }}
+             />
+           </div>
+           <p className="mt-1.5 text-right font-mono text-xs text-rose-deep dark:text-rose">
+             {next.progress.toFixed(0)}%
+           </p>
+         </div>
       )}
     </Card>
   )
