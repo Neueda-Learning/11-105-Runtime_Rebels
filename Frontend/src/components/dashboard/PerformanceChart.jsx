@@ -38,12 +38,13 @@ export default function PerformanceChart({ points = [], loading, currency, range
         <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={data} margin={{ left: -20, right: 8, top: 8 }}>
-              <defs>
-                <linearGradient id="perfFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#CBA35C" stopOpacity={0.35} />
-                  <stop offset="100%" stopColor="#CBA35C" stopOpacity={0} />
-                </linearGradient>
-              </defs>
+               <defs>
+                 <linearGradient id="perfFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#E649A1" stopOpacity={0.42} />
+                    <stop offset="55%" stopColor="#B48CFF" stopOpacity={0.2} />
+                    <stop offset="100%" stopColor="#B48CFF" stopOpacity={0} />
+                 </linearGradient>
+               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--line))" vertical={false} />
               <XAxis
                 dataKey="date"
@@ -70,7 +71,7 @@ export default function PerformanceChart({ points = [], loading, currency, range
                   fontSize: 12,
                 }}
               />
-              <Area type="monotone" dataKey="value" stroke="#CBA35C" strokeWidth={2} fill="url(#perfFill)" />
+                <Area type="monotone" dataKey="value" stroke="#C92E86" strokeWidth={2.3} fill="url(#perfFill)" />
             </AreaChart>
           </ResponsiveContainer>
         </div>
