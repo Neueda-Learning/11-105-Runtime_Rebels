@@ -6,7 +6,7 @@ export function Card({ className, children, ...rest }) {
   return (
     <div
       className={clsx(
-        'rounded-xl2 border border-line bg-paper-raised/80 p-5 shadow-glass-sm backdrop-blur-sm',
+        'rounded-xl2 border border-line/70 bg-gradient-to-b from-paper-raised/95 to-paper/85 p-5 shadow-glass-sm backdrop-blur-sm',
         className
       )}
       {...rest}
@@ -41,7 +41,7 @@ export function Button({ className, variant = 'primary', size = 'md', children, 
     lg: 'px-6 py-3 text-sm',
   }
   const variants = {
-    primary: 'bg-rose text-[#151109] hover:bg-rose-soft shadow-glass-sm',
+    primary: 'bg-gradient-to-r from-rose to-violet text-white hover:from-rose-deep hover:to-violet-deep shadow-glass-sm',
     ghost: 'bg-transparent text-ink hover:bg-paper-sunken border border-line',
     subtle: 'bg-paper-sunken text-ink hover:bg-line/20',
     danger: 'bg-brick/10 text-brick hover:bg-brick/20 border border-brick/30',
@@ -191,4 +191,4 @@ export function Field({ label, children, hint }) {
 }
 
 export const inputClass =
-  'w-full rounded-lg border border-line bg-paper px-3 py-2.5 text-sm text-ink outline-none transition focus:border-rose focus:ring-2 focus:ring-rose/20'
+  'w-full rounded-lg border border-line bg-paper px-3 py-2.5 text-sm text-ink outline-none transition focus:border-violet focus:ring-2 focus:ring-violet/25'
