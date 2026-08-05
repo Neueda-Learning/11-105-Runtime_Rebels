@@ -6,6 +6,7 @@ import { useApp } from '../context/AppContext.jsx'
 import { Button, Card, ErrorState, EmptyState, Skeleton } from '../components/ui.jsx'
 import TransactionDrawer from '../components/transactions/TransactionDrawer.jsx'
 import { pick, formatCurrency, formatDate } from '../utils/format.js'
+import { getApiErrorMessage } from '../utils/validation.js'
 
 const TYPE_META = {
   BUY: { icon: ArrowDownLeft, tone: 'text-jade' },
@@ -27,13 +28,13 @@ export default function Transactions() {
 
   async function handleSubmit(investmentId, payload) {
     try {
-      console.log('Submitting transaction:', investmentId, payload)
       await createTransaction(investmentId, payload)
       push('Transaction recorded.')
       setOpen(false)
       tx.refetch()
     } catch (e) {
-      push(e.message, 'error')
+      push(getApiErrorMessage(e, 'Unable to save transaction.'), 'error')
+      throw e
     }
   }
 

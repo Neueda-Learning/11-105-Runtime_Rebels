@@ -1,5 +1,15 @@
 import { useEffect, useState } from 'react'
-import { Drawer, Field, Button, inputClass } from '../ui.jsx'
+import clsx from 'clsx'
+import { Drawer, Field, Button, inputClass, invalidInputClass } from '../ui.jsx'
+import {
+  VALIDATION_MESSAGES,
+  getApiErrorMessage,
+  isPositiveNumber,
+  isValidSelection,
+  mapApiFieldErrors,
+  parseNumber,
+  toTrimmedString,
+} from '../../utils/validation.js'
 
 const TYPES = ['STOCK', 'ETF', 'FD', 'CASH']
 const COUNTRIES = ['INDIA', 'US', 'UK', 'EUROPE', 'CHINA']
@@ -16,34 +26,96 @@ const empty = {
   currentPrice: '',
 }
 
+function validate(form) {
+  const errors = {}
+
+  if (!toTrimmedString(form.symbol)) errors.symbol = VALIDATION_MESSAGES.required
+  if (!toTrimmedString(form.name)) errors.name = VALIDATION_MESSAGES.required
+  if (!isValidSelection(form.type)) errors.type = VALIDATION_MESSAGES.selectOption
+  if (!isValidSelection(form.country)) errors.country = VALIDATION_MESSAGES.selectOption
+  if (!isValidSelection(form.currency)) errors.currency = VALIDATION_MESSAGES.selectOption
+
+  if (!isPositiveNumber(form.quantity)) {
+    errors.quantity = form.quantity ? VALIDATION_MESSAGES.invalidAmount : VALIDATION_MESSAGES.required
+  }
+
+  if (!isPositiveNumber(form.purchasePrice)) {
+    errors.purchasePrice = form.purchasePrice ? VALIDATION_MESSAGES.invalidAmount : VALIDATION_MESSAGES.required
+  }
+
+  if (String(form.currentPrice ?? '').trim() && !isPositiveNumber(form.currentPrice)) {
+    errors.currentPrice = VALIDATION_MESSAGES.invalidAmount
+  }
+
+  return errors
+}
+
 export default function InvestmentDrawer({ open, onClose, onSubmit, initial }) {
   const [form, setForm] = useState(empty)
+  const [errors, setErrors] = useState({})
+  const [formError, setFormError] = useState('')
+  const [saving, setSaving] = useState(false)
   const isEdit = Boolean(initial)
 
   useEffect(() => {
-    setForm(initial ? { ...empty, ...initial } : empty)
+    if (open) {
+      setForm(initial ? { ...empty, ...initial } : empty)
+      setErrors({})
+      setFormError('')
+      setSaving(false)
+    }
   }, [initial, open])
 
   function set(key, value) {
+    setErrors((prev) => ({ ...prev, [key]: '' }))
+    setFormError('')
     setForm((f) => ({ ...f, [key]: value }))
   }
 
-  function submit(e) {
+  async function submit(e) {
     e.preventDefault()
 
-    // Explicitly construct the exact payload expected by the backend API
+    const nextErrors = validate(form)
+    if (Object.values(nextErrors).some(Boolean)) {
+      setErrors(nextErrors)
+      return
+    }
+
     const payload = {
-      symbol: (form.symbol || form.name).trim(), // Ensures symbol is never blank
-      name: (form.name || form.symbol).trim(),
+      symbol: toTrimmedString(form.symbol || form.name),
+      name: toTrimmedString(form.name || form.symbol),
       type: form.type,
       country: form.country,
       currency: form.currency,
-      quantity: Number(form.quantity),
-      avgBuyPrice: Number(form.purchasePrice), // Maps purchasePrice to avgBuyPrice for the backend
-      currentPrice: form.currentPrice ? Number(form.currentPrice) : Number(form.purchasePrice),
+      quantity: parseNumber(form.quantity),
+      avgBuyPrice: parseNumber(form.purchasePrice),
+      currentPrice: String(form.currentPrice ?? '').trim()
+        ? parseNumber(form.currentPrice)
+        : parseNumber(form.purchasePrice),
     }
 
-    onSubmit(payload)
+    try {
+      setSaving(true)
+      setErrors({})
+      setFormError('')
+      await onSubmit(payload)
+    } catch (error) {
+      setErrors(
+        mapApiFieldErrors(error, {
+          avgBuyPrice: 'purchasePrice',
+          quantity: 'quantity',
+          symbol: 'symbol',
+          name: 'name',
+          type: 'type',
+          country: 'country',
+          currency: 'currency',
+          currentPrice: 'currentPrice',
+        })
+      )
+      setFormError(getApiErrorMessage(error, 'Unable to save investment. Please review the form and try again.'))
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -53,17 +125,16 @@ export default function InvestmentDrawer({ open, onClose, onSubmit, initial }) {
       title={isEdit ? 'Edit investment' : 'Add investment'}
       footer={
         <div className="flex justify-end gap-2">
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button onClick={submit}>{isEdit ? 'Save changes' : 'Add investment'}</Button>
+          <Button variant="ghost" onClick={onClose} disabled={saving}>Cancel</Button>
+          <Button onClick={submit} disabled={saving}>{saving ? 'Saving...' : isEdit ? 'Save changes' : 'Add investment'}</Button>
         </div>
       }
     >
-      <form onSubmit={submit} className="space-y-4">
+      <form onSubmit={submit} className="space-y-4" noValidate>
         {/* Symbol Field */}
-        <Field label="Symbol">
+        <Field label="Symbol" error={errors.symbol}>
           <input
-            required
-            className={inputClass}
+            className={clsx(inputClass, errors.symbol && invalidInputClass)}
             placeholder="e.g. Airtel Ltd or AAPL"
             value={form.symbol}
             onChange={(e) => set('symbol', e.target.value)}
@@ -71,10 +142,9 @@ export default function InvestmentDrawer({ open, onClose, onSubmit, initial }) {
         </Field>
 
         {/* Company / Asset Name Field */}
-        <Field label="Company / Holding Name">
+        <Field label="Company / Holding Name" error={errors.name}>
           <input
-            required
-            className={inputClass}
+            className={clsx(inputClass, errors.name && invalidInputClass)}
             placeholder="e.g. Airtel Communication Ltd"
             value={form.name}
             onChange={(e) => set('name', e.target.value)}
@@ -82,15 +152,15 @@ export default function InvestmentDrawer({ open, onClose, onSubmit, initial }) {
         </Field>
 
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Type">
-            <select className={inputClass} value={form.type} onChange={(e) => set('type', e.target.value)}>
+          <Field label="Type" error={errors.type}>
+            <select className={clsx(inputClass, errors.type && invalidInputClass)} value={form.type} onChange={(e) => set('type', e.target.value)}>
               {TYPES.map((t) => (
                 <option key={t} value={t}>{t}</option>
               ))}
             </select>
           </Field>
-          <Field label="Country / market">
-            <select className={inputClass} value={form.country} onChange={(e) => set('country', e.target.value)}>
+          <Field label="Country / market" error={errors.country}>
+            <select className={clsx(inputClass, errors.country && invalidInputClass)} value={form.country} onChange={(e) => set('country', e.target.value)}>
               {COUNTRIES.map((c) => (
                 <option key={c} value={c}>{c}</option>
               ))}
@@ -98,8 +168,8 @@ export default function InvestmentDrawer({ open, onClose, onSubmit, initial }) {
           </Field>
         </div>
 
-        <Field label="Currency">
-          <select className={inputClass} value={form.currency} onChange={(e) => set('currency', e.target.value)}>
+        <Field label="Currency" error={errors.currency}>
+          <select className={clsx(inputClass, errors.currency && invalidInputClass)} value={form.currency} onChange={(e) => set('currency', e.target.value)}>
             {CURRENCIES.map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
@@ -107,37 +177,36 @@ export default function InvestmentDrawer({ open, onClose, onSubmit, initial }) {
         </Field>
 
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Quantity / units">
+          <Field label="Quantity / units" error={errors.quantity}>
             <input
-              required
               type="number"
               step="any"
-              className={inputClass}
+              className={clsx(inputClass, errors.quantity && invalidInputClass)}
               value={form.quantity}
               onChange={(e) => set('quantity', e.target.value)}
             />
           </Field>
-          <Field label="Purchase price / unit">
+          <Field label="Purchase price / unit" error={errors.purchasePrice}>
             <input
-              required
               type="number"
               step="any"
-              className={inputClass}
+              className={clsx(inputClass, errors.purchasePrice && invalidInputClass)}
               value={form.purchasePrice}
               onChange={(e) => set('purchasePrice', e.target.value)}
             />
           </Field>
         </div>
 
-        <Field label="Current price / unit" hint="Leave blank to use the purchase price initially">
+        <Field label="Current price / unit" hint="Leave blank to use the purchase price initially" error={errors.currentPrice}>
           <input
             type="number"
             step="any"
-            className={inputClass}
+            className={clsx(inputClass, errors.currentPrice && invalidInputClass)}
             value={form.currentPrice}
             onChange={(e) => set('currentPrice', e.target.value)}
           />
         </Field>
+        {formError && <p className="text-sm text-brick">{formError}</p>}
       </form>
     </Drawer>
   )
