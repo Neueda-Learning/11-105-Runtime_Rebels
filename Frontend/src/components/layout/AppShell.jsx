@@ -2,7 +2,7 @@ import { NavLink, Outlet } from 'react-router-dom'
 import { LayoutDashboard, Wallet, Flag, ArrowLeftRight, Settings } from 'lucide-react'
 import clsx from 'clsx'
 import { useApp } from '../../context/AppContext.jsx'
-import ThemeSwitcher from '../theme/ThemeSwitcher.jsx'
+import ThemeSwitcher from '../../context/ThemeSwitcher.jsx'
 
 const NAV = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
