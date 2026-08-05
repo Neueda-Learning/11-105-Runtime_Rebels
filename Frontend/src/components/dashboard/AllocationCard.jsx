@@ -10,14 +10,14 @@ import {
 import { Card, SectionHeading, Skeleton, EmptyState } from '../ui.jsx'
 
 const ALLOC_COLORS = [
-  "#2563EB",
-  "#22C55E",
-  "#F59E0B",
-  "#EF4444",
-  "#8B5CF6",
-  "#06B6D4",
-  "#84CC16",
-  "#F97316",
+  "#E649A1",
+  "#B48CFF",
+  "#F39BC7",
+  "#8E63F4",
+  "#F06292",
+  "#DEC9FF",
+  "#D946EF",
+  "#C92E86",
 ];
 
 const TABS = [
@@ -68,7 +68,7 @@ function AllocationCard({
 
       {/* Tabs */}
 
-      <div className="mt-6 mb-6 flex rounded-xl bg-muted p-1">
+      <div className="mb-6 mt-6 flex rounded-xl border border-line bg-paper-sunken/80 p-1">
         {TABS.map((tab) => (
           <button
             key={tab.key}
@@ -76,8 +76,8 @@ function AllocationCard({
             className={`flex-1 rounded-lg py-2 text-sm font-medium transition-all
             ${
               activeTab === tab.key
-                ? "bg-primary text-primary-foreground shadow"
-                : "text-muted-foreground hover:bg-background"
+                ? "border border-rose/35 bg-paper-raised text-rose-deep shadow-glass-sm dark:text-rose-soft"
+                : "text-ink-soft hover:bg-paper-raised hover:text-ink"
             }`}
           >
             {tab.label}
@@ -120,23 +120,24 @@ function AllocationCard({
                   ]}
                   contentStyle={{
                     borderRadius: 12,
-                    border: "1px solid #E5E7EB",
-                    backgroundColor: "#fff",
+                    border: "1px solid rgb(var(--line) / 0.8)",
+                    backgroundColor: "rgb(var(--paper-raised))",
+                    color: "rgb(var(--ink))",
                   }}
                 />
               </PieChart>
             </ResponsiveContainer>
 
             <div className="-mt-44 flex flex-col items-center justify-center">
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-ink-faint">
                 {TABS.find((t) => t.key === activeTab)?.label}
               </p>
 
-              <p className="text-3xl font-bold">
+              <p className="text-3xl font-bold text-ink">
                 {data.length}
               </p>
 
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-ink-faint">
                 Categories
               </p>
             </div>
@@ -148,7 +149,7 @@ function AllocationCard({
             {data.map((item, index) => (
               <div
                 key={item.name}
-                className="flex items-center justify-between rounded-lg border p-3"
+                className="flex items-center justify-between rounded-xl border border-line bg-paper-raised/70 p-3"
               >
                 <div className="flex items-center gap-3">
                   <span
@@ -162,24 +163,24 @@ function AllocationCard({
                   <div>
                     <p className="font-medium">{item.name}</p>
 
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-ink-faint">
                       {formatCurrency(item.amount, baseCurrency)}
                     </p>
                   </div>
                 </div>
 
-                <span className="font-semibold">
+                <span className="font-semibold text-rose-deep dark:text-rose-soft">
                   {item.value.toFixed(2)}%
                 </span>
               </div>
             ))}
 
-            <div className="mt-4 rounded-lg bg-muted p-4">
-              <p className="text-sm text-muted-foreground">
+            <div className="mt-4 rounded-xl border border-line bg-gradient-to-r from-rose/10 to-violet/10 p-4">
+              <p className="text-sm text-ink-faint">
                 Base Currency
               </p>
 
-              <p className="text-lg font-semibold">
+              <p className="text-lg font-semibold text-ink">
                 {baseCurrency}
               </p>
             </div>
