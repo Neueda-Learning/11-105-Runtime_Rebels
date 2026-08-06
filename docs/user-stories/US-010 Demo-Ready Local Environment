@@ -1,1 +1,8 @@
 
+User story:
+As a team member, I want one-command startup with optional mock data, so that I can demo quickly.
+
+Acceptance criteria:
+- Given Docker is installed, when compose is run, then app and database start successfully.
+- Given dev profile is active, when migrations run, then mock data is loaded.
+- Given service startup completed, when health endpoint is checked, then status is UP.
