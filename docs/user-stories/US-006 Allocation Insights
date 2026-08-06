@@ -1,1 +1,8 @@
 
+User story:
+As a customer, I want allocation by type, country, and currency, so that I can understand concentration risk.
+
+Acceptance criteria:
+- Given active investments exist, when allocation is computed, then each group has value and percentage.
+- Given allocation is displayed, when totals are checked, then percentages total near 100 percent.
+- Given base-currency reporting, when values are shown, then all groups are shown in base currency.
