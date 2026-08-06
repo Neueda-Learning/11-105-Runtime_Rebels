@@ -4,6 +4,7 @@ import com.portfoliomanager.mapper.InvestmentRowMapper;
 import com.portfoliomanager.model.Investment;
 import com.portfoliomanager.model.InvestmentStatus;
 import com.portfoliomanager.model.InvestmentType;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
@@ -25,33 +26,83 @@ public class InvestmentRepository {
     }
 
     public List<Investment> findAll(InvestmentType type, String country, InvestmentStatus status) {
-        StringBuilder sql = new StringBuilder("SELECT * FROM investments WHERE 1=1");
+        StringBuilder sql = new StringBuilder("""
+                SELECT i.*, c.commodity_type, c.market_exchange
+                FROM investments i
+                LEFT JOIN commodities c ON c.investment_id = i.id
+                WHERE 1=1
+                """);
         List<Object> params = new java.util.ArrayList<>();
 
         if (type != null) {
-            sql.append(" AND type = ?");
+            sql.append(" AND i.type = ?");
             params.add(type.name());
         }
         if (country != null && !country.isBlank()) {
-            sql.append(" AND country = ?");
+            sql.append(" AND i.country = ?");
             params.add(country);
         }
         if (status != null) {
-            sql.append(" AND status = ?");
+            sql.append(" AND i.status = ?");
             params.add(status.name());
         }
-        sql.append(" ORDER BY created_at DESC");
+        sql.append(" ORDER BY i.created_at DESC");
 
-        return jdbcTemplate.query(sql.toString(), rowMapper, params.toArray());
+        try {
+            return jdbcTemplate.query(sql.toString(), rowMapper, params.toArray());
+        } catch (DataAccessException ex) {
+            StringBuilder fallback = new StringBuilder("""
+                    SELECT i.*, NULL AS commodity_type, NULL AS market_exchange
+                    FROM investments i
+                    WHERE 1=1
+                    """);
+            if (type != null) fallback.append(" AND i.type = ?");
+            if (country != null && !country.isBlank()) fallback.append(" AND i.country = ?");
+            if (status != null) fallback.append(" AND i.status = ?");
+            fallback.append(" ORDER BY i.created_at DESC");
+            return jdbcTemplate.query(fallback.toString(), rowMapper, params.toArray());
+        }
     }
 
     public List<Investment> findAllActive() {
-        return jdbcTemplate.query("SELECT * FROM investments WHERE status = 'ACTIVE'", rowMapper);
+        try {
+            return jdbcTemplate.query(
+                    """
+                            SELECT i.*, c.commodity_type, c.market_exchange
+                            FROM investments i
+                            LEFT JOIN commodities c ON c.investment_id = i.id
+                            WHERE i.status = 'ACTIVE'
+                            """,
+                    rowMapper);
+        } catch (DataAccessException ex) {
+            return jdbcTemplate.query(
+                    """
+                            SELECT i.*, NULL AS commodity_type, NULL AS market_exchange
+                            FROM investments i
+                            WHERE i.status = 'ACTIVE'
+                            """,
+                    rowMapper);
+        }
     }
 
     public Optional<Investment> findById(Long id) {
-        List<Investment> results = jdbcTemplate.query(
-                "SELECT * FROM investments WHERE id = ?", rowMapper, id);
+        List<Investment> results;
+        try {
+            results = jdbcTemplate.query(
+                    """
+                            SELECT i.*, c.commodity_type, c.market_exchange
+                            FROM investments i
+                            LEFT JOIN commodities c ON c.investment_id = i.id
+                            WHERE i.id = ?
+                            """, rowMapper, id);
+        } catch (DataAccessException ex) {
+            results = jdbcTemplate.query(
+                    """
+                            SELECT i.*, NULL AS commodity_type, NULL AS market_exchange
+                            FROM investments i
+                            WHERE i.id = ?
+                            """, rowMapper, id);
+        }
         return results.stream().findFirst();
     }
 

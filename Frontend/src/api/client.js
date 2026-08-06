@@ -42,8 +42,33 @@ export const getPerformance = (params = {}) =>
 export const triggerSnapshot = () => http.post('/dashboard/snapshot').then((r) => r.data)
 
 /* --------------------------- Investments ---------------------------- */
-export const listInvestments = (params = {}) =>
-  http.get('/investments', { params }).then((r) => r.data)
+export async function listInvestments(params = {}) {
+  try {
+    const response = await http.get('/investments', { params })
+    return response.data
+  } catch (error) {
+    const requestedType = String(params?.type || '').toUpperCase()
+    const backendRejectedCommodityFilter =
+      requestedType === 'COMMODITY' &&
+      String(error?.message || '').includes("Method parameter 'type'")
+
+    if (!backendRejectedCommodityFilter) {
+      throw error
+    }
+
+    // Fallback path for older backend builds: fetch all and filter commodities client-side.
+    const fallbackResponse = await http.get('/investments')
+    const payload = fallbackResponse.data
+    const rows = Array.isArray(payload)
+      ? payload
+      : Array.isArray(payload?.investments)
+        ? payload.investments
+        : Array.isArray(payload?.content)
+          ? payload.content
+          : []
+    return rows.filter((row) => String(row?.type || '').toUpperCase() === 'COMMODITY')
+  }
+}
 export const getInvestment = (id) => http.get(`/investments/${id}`).then((r) => r.data)
 export const createInvestment = (payload) =>
   http.post('/investments', payload).then((r) => r.data)
@@ -52,6 +77,13 @@ export const updateInvestment = (id, payload) =>
 export const refreshInvestmentPrice = (id, payload) =>
   http.patch(`/investments/${id}/price`, payload).then((r) => r.data)
 export const deleteInvestment = (id) => http.delete(`/investments/${id}`).then((r) => r.data)
+
+/* --------------------------- Commodities ---------------------------- */
+export const listCommodities = () => http.get('/commodities').then((r) => r.data)
+export const getCommodity = (id) => http.get(`/commodities/${id}`).then((r) => r.data)
+export const createCommodity = (payload) => http.post('/commodities', payload).then((r) => r.data)
+export const updateCommodity = (id, payload) => http.put(`/commodities/${id}`, payload).then((r) => r.data)
+export const deleteCommodity = (id) => http.delete(`/commodities/${id}`).then((r) => r.data)
 
 /* ----------------------------- Currency ------------------------------ */
 export const getBaseCurrency = () => http.get('/settings/base-currency').then((r) => r.data)

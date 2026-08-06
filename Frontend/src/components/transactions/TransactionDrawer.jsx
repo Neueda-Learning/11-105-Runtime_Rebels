@@ -52,8 +52,8 @@ function validate(form, investments, needsQuantityPrice) {
   const selectedInvestment = investments.find((inv) => String(pick(inv, ['id'])) === String(form.investmentId))
   const selectedType = pick(selectedInvestment, ['type', 'investmentType'])
   if (selectedType) {
-    if (['BUY', 'SELL'].includes(form.type) && !['STOCK', 'ETF'].includes(selectedType)) {
-      errors.type = 'Please select BUY/SELL only for STOCK or ETF investments.'
+    if (['BUY', 'SELL'].includes(form.type) && !['STOCK', 'ETF', 'COMMODITY'].includes(selectedType)) {
+      errors.type = 'Please select BUY/SELL only for STOCK, ETF or COMMODITY investments.'
     }
     if (['DEPOSIT', 'WITHDRAW'].includes(form.type) && selectedType !== 'CASH') {
       errors.type = 'Please select DEPOSIT/WITHDRAW only for CASH investments.'

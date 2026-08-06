@@ -37,7 +37,10 @@ export default function InvestmentTable({ investments, loading, sortConfig, onSo
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate font-medium text-ink">{item.name}</p>
-                  <p className="mt-1 text-xs text-ink-faint">{item.country} · {item.currency}</p>
+                  <p className="mt-1 text-xs text-ink-faint">
+                    {item.type === 'COMMODITY' && item.market ? `${item.market} · ` : ''}
+                    {item.country} · {item.currency}
+                  </p>
                 </div>
                 <Badge tone="violet">{item.type}</Badge>
               </div>
@@ -76,6 +79,7 @@ export default function InvestmentTable({ investments, loading, sortConfig, onSo
               <SortableHeader label="Name" sortKey="name" sortConfig={sortConfig} onSort={onSort} />
               <th className="px-4 py-3">Type</th>
               <th className="px-4 py-3">Market</th>
+              <SortableHeader label="Purchase date" sortKey="date" sortConfig={sortConfig} onSort={onSort} />
               <SortableHeader label="Invested" sortKey="invested" sortConfig={sortConfig} onSort={onSort} align="right" />
               <SortableHeader label="Current value" sortKey="current" sortConfig={sortConfig} onSort={onSort} align="right" />
               <SortableHeader label="P/L" sortKey="plPct" sortConfig={sortConfig} onSort={onSort} align="right" />
@@ -92,7 +96,8 @@ export default function InvestmentTable({ investments, loading, sortConfig, onSo
                   <td className="px-4 py-3">
                     <Badge tone="violet">{item.type}</Badge>
                   </td>
-                  <td className="px-4 py-3 text-ink-faint">{item.country}</td>
+                  <td className="px-4 py-3 text-ink-faint">{item.type === 'COMMODITY' ? (item.market || item.country) : item.country}</td>
+                  <td className="px-4 py-3 text-ink-faint">{item.purchaseDate || '—'}</td>
                   <td className="px-4 py-3 text-right font-tabular text-ink-faint">
                     {formatCurrency(item.invested, item.currency, { decimals: 0 })}
                   </td>
@@ -131,10 +136,12 @@ function mapInvestment(inv) {
     name: pick(inv, ['name', 'symbol'], 'Unnamed'),
     type: pick(inv, ['type', 'investmentType'], '—'),
     country: pick(inv, ['country', 'market'], '—'),
+    market: pick(inv, ['market'], ''),
     currency: pick(inv, ['currency'], 'INR'),
+    purchaseDate: pick(inv, ['purchaseDate'], null),
     invested: pick(inv, ['investedAmount', 'totalInvested'], 0),
     current: pick(inv, ['currentValue', 'currentAmount'], 0),
-    plPct: pick(inv, ['gainLossPercentage', 'returnPercentage'], 0),
+    plPct: pick(inv, ['unrealizedPlPercent', 'gainLossPercentage', 'returnPercentage'], 0),
   }
 }
 

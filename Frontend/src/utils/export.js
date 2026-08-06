@@ -104,6 +104,30 @@ export function exportInvestmentsToCSV(investments, baseCurrency = 'INR') {
       getValue: (inv) => cleanValueForCSV(pick(inv, ['type', 'investmentType'], ''))
     },
     {
+      key: 'commodityName',
+      label: 'Commodity Name',
+      getValue: (inv) => {
+        const type = cleanValueForCSV(pick(inv, ['type', 'investmentType'], ''))
+        return type === 'COMMODITY' ? cleanValueForCSV(pick(inv, ['name', 'symbol'], '')) : ''
+      }
+    },
+    {
+      key: 'commodityType',
+      label: 'Commodity Type',
+      getValue: (inv) => {
+        const type = cleanValueForCSV(pick(inv, ['type', 'investmentType'], ''))
+        return type === 'COMMODITY' ? cleanValueForCSV(pick(inv, ['commodityType'], '')) : ''
+      }
+    },
+    {
+      key: 'market',
+      label: 'Market',
+      getValue: (inv) => {
+        const type = cleanValueForCSV(pick(inv, ['type', 'investmentType'], ''))
+        return type === 'COMMODITY' ? cleanValueForCSV(pick(inv, ['market'], '')) : ''
+      }
+    },
+    {
       key: 'country',
       label: 'Country',
       getValue: (inv) => cleanValueForCSV(pick(inv, ['country', 'market'], ''))
@@ -313,6 +337,7 @@ export function exportPortfolioSummaryToCSV(dashboard, investments, baseCurrency
   const filename = `portfolio_summary_${new Date().toISOString().slice(0, 10)}.csv`
   downloadCSV(csv, filename)
 }
+
 
 
 

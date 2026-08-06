@@ -27,8 +27,6 @@ export default function Dashboard() {
   const investmentsAsync = useAsync(listInvestments, [])
   const data = dashboard.data || {}
   const dashboardMovers = pick(data, ['topMovers', 'investments'], []) || []
-  console.log('data', data) // Debugging line
-  console.log('investments', investmentsAsync.data) // Debugging line
   // console.log('data',data.nextMilestone)
 
   const allInvestments = Array.isArray(investmentsAsync.data)
@@ -37,8 +35,17 @@ export default function Dashboard() {
 
   // const investments = dashboardMovers.length > 0 ? dashboardMovers : allInvestments
 
-  const allocation = pick(data, ['allocation', 'assetAllocation', 'allocationByCountry', 'allocationByCurrency', 'allocationByType'], []) || []
-  // console.log('allocation', allocation)
+  const typeAllocation = Array.isArray(data.allocationByType) ? [...data.allocationByType] : []
+  const hasCommoditySlice = typeAllocation.some((item) => String(item?.label).toUpperCase() === 'COMMODITY')
+  const commodityValueBase = Number(data.commodityValueBase || 0)
+  const totalCurrentValue = Number(data.totalCurrentValue || 0)
+  if (!hasCommoditySlice && commodityValueBase > 0) {
+    typeAllocation.push({
+      label: 'COMMODITY',
+      valueBase: data.commodityValueBase,
+      percentage: totalCurrentValue > 0 ? (commodityValueBase / totalCurrentValue) * 100 : 0,
+    })
+  }
   const milestones = pick(data, ['milestones', 'upcomingMilestones'], []) || []
   
   const performancePoints = Array.isArray(performance.data)
@@ -96,7 +103,7 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <AllocationCard allocations={{
-          type: data.allocationByType,
+          type: typeAllocation,
           country: data.allocationByCountry,
           currency: data.allocationByCurrency
         }}

@@ -17,7 +17,9 @@ import org.springframework.http.ResponseEntity;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -40,11 +42,26 @@ class InvestmentControllerTest {
         when(investmentService.findAll(InvestmentType.STOCK, "US", InvestmentStatus.ACTIVE))
                 .thenReturn(List.of(response));
 
-        List<InvestmentResponse> result = controller.findAll(InvestmentType.STOCK, "US", InvestmentStatus.ACTIVE);
+        List<InvestmentResponse> result = controller.findAll("stock", "US", InvestmentStatus.ACTIVE);
 
         assertEquals(1, result.size());
         assertSame(response, result.get(0));
         verify(investmentService).findAll(InvestmentType.STOCK, "US", InvestmentStatus.ACTIVE);
+    }
+
+    @Test
+    void findAll_mapsCommoditiesAliasToCommodity() {
+        controller.findAll("commodities", null, null);
+        verify(investmentService).findAll(InvestmentType.COMMODITY, null, null);
+    }
+
+    @Test
+    void findAll_invalidTypeThrowsHelpfulError() {
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> controller.findAll("crypto", null, null)
+        );
+        assertTrue(ex.getMessage().contains("Invalid investment type"));
     }
 
     @Test

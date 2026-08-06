@@ -19,6 +19,8 @@ export default function NetWorthHero({ data, loading, currency }) {
   const todayChange = pick(data, ['todayGainLoss', 'todaysGainLoss', 'dayChange'], 0)
   const todayChangePct = pick(data, ['todayGainLossPercentage', 'todaysGainLossPercentage', 'dayChangePercentage'], 0)
   const overallPct = pick(data, ['overallReturnPercentage', 'totalReturnPercentage', 'returnPercentage'], 0)
+  const commodityCount = Number(pick(data, ['commodityCount'], 0))
+  const commodityValue = pick(data, ['commodityValueBase'], 0)
   const asOf = pick(data, ['asOf', 'lastUpdated', 'updatedAt'])
 
   const isUp = Number(todayChange) >= 0
@@ -92,6 +94,9 @@ sm:p-8
             <p className="mt-1 font-semibold text-white/90 dark:text-white/90">{formatPercent(overallPct)}</p>
           </div>
         </div>
+        <p className="mt-3 text-xs text-white/75 dark:text-white/75">
+          Commodities: {commodityCount} holdings · {formatCurrency(commodityValue, currency, { decimals: 0 })}
+        </p>
       </div>
     </motion.div>
   )

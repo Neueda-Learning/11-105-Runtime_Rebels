@@ -3,6 +3,7 @@ package com.portfoliomanager.service;
 import com.portfoliomanager.dto.AllocationItem;
 import com.portfoliomanager.dto.DashboardResponse;
 import com.portfoliomanager.model.Investment;
+import com.portfoliomanager.model.InvestmentType;
 import com.portfoliomanager.model.Transaction;
 import com.portfoliomanager.repository.InvestmentRepository;
 import com.portfoliomanager.repository.TransactionRepository;
@@ -60,6 +61,11 @@ public class DashboardService {
 
         BigDecimal todayGainLoss = totalCurrentValue.subtract(totalPreviousValue);
         BigDecimal todayGainLossPercent = percentOf(totalPreviousValue, todayGainLoss);
+        long commodityCount = activeInvestments.stream().filter(inv -> inv.getType() == InvestmentType.COMMODITY).count();
+        BigDecimal commodityValueBase = activeInvestments.stream()
+                .filter(inv -> inv.getType() == InvestmentType.COMMODITY)
+                .map(inv -> currencyService.toBase(inv.getCurrentValue(), inv.getCurrency()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         milestoneService.refreshAchievedStatus(totalCurrentValue);
 
@@ -73,6 +79,8 @@ public class DashboardService {
                 .overallPlPercent(overallPlPercent)
                 .todayGainLoss(scaled(todayGainLoss))
                 .todayGainLossPercent(todayGainLossPercent)
+                .commodityCount(commodityCount)
+                .commodityValueBase(scaled(commodityValueBase))
                 .allocationByType(allocationByType(activeInvestments, totalCurrentValue))
                 .allocationByCountry(allocationBy(activeInvestments, Investment::getCountry, totalCurrentValue))
                 .allocationByCurrency(allocationBy(activeInvestments, Investment::getCurrency, totalCurrentValue))

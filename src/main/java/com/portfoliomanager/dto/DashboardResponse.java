@@ -31,6 +31,9 @@ public class DashboardResponse {
     private BigDecimal todayGainLoss;
     private BigDecimal todayGainLossPercent;
 
+    private long commodityCount;
+    private BigDecimal commodityValueBase;
+
     private List<AllocationItem> allocationByType;
     private List<AllocationItem> allocationByCountry;
     private List<AllocationItem> allocationByCurrency;

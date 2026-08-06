@@ -3,6 +3,7 @@ package com.portfoliomanager.mapper;
 import com.portfoliomanager.model.Investment;
 import com.portfoliomanager.model.InvestmentStatus;
 import com.portfoliomanager.model.InvestmentType;
+import com.portfoliomanager.model.CommodityType;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;
@@ -19,6 +20,8 @@ public class InvestmentRowMapper implements RowMapper<Investment> {
                 .name(rs.getString("name"))
                 .country(rs.getString("country"))
                 .currency(rs.getString("currency"))
+                .market(rs.getString("market_exchange"))
+                .commodityType(rs.getString("commodity_type") != null ? CommodityType.valueOf(rs.getString("commodity_type")) : null)
                 .quantity(rs.getBigDecimal("quantity"))
                 .avgBuyPrice(rs.getBigDecimal("avg_buy_price"))
                 .currentPrice(rs.getBigDecimal("current_price"))

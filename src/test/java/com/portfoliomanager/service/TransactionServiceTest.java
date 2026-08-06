@@ -123,6 +123,29 @@ class TransactionServiceTest {
     }
 
     @Test
+    void record_buyForCommodityUpdatesPosition() {
+        Investment commodity = stockInvestment(40L, "GOLD", "INR", "3", "100", "300", "300");
+        commodity.setType(InvestmentType.COMMODITY);
+        when(investmentService.getOrThrow(40L)).thenReturn(commodity);
+        when(transactionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(investmentRepository.update(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TransactionRequest req = new TransactionRequest();
+        req.setType(TransactionType.BUY);
+        req.setQuantity(new BigDecimal("2"));
+        req.setPrice(new BigDecimal("120"));
+        req.setAmount(new BigDecimal("240"));
+        req.setTransactionDate(LocalDate.of(2026, 8, 5));
+
+        transactionService.record(40L, req);
+
+        assertEquals(0, new BigDecimal("5").compareTo(commodity.getQuantity()));
+        assertEquals(0, new BigDecimal("108.000000").compareTo(commodity.getAvgBuyPrice()));
+        assertEquals(0, new BigDecimal("540.000000").compareTo(commodity.getInvestedAmount()));
+        assertEquals(0, new BigDecimal("600").compareTo(commodity.getCurrentValue()));
+    }
+
+    @Test
     void record_sellComputesRealizedPlAndClosesWhenQuantityZero() {
         Investment inv = stockInvestment(10L, "AAPL", "USD", "5", "100", "500", "500");
         when(investmentService.getOrThrow(10L)).thenReturn(inv);

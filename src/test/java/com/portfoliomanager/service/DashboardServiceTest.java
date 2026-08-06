@@ -63,6 +63,15 @@ class DashboardServiceTest {
                 .previousValue(null)
                 .build();
 
+        Investment commodity = Investment.builder()
+                .type(InvestmentType.COMMODITY)
+                .country("India")
+                .currency("INR")
+                .investedAmount(new BigDecimal("500.00"))
+                .currentValue(new BigDecimal("700.00"))
+                .previousValue(new BigDecimal("650.00"))
+                .build();
+
         Transaction sellUsd = Transaction.builder()
                 .currency("USD")
                 .realizedPl(new BigDecimal("10.00"))
@@ -86,40 +95,44 @@ class DashboardServiceTest {
                 .build();
 
         when(currencyService.getBaseCurrency()).thenReturn("INR");
-        when(investmentRepository.findAllActive()).thenReturn(List.of(usStock, inEtf));
+        when(investmentRepository.findAllActive()).thenReturn(List.of(usStock, inEtf, commodity));
         when(transactionRepository.findAllRealizedPlTransactions())
                 .thenReturn(List.of(sellUsd, sellInr, sellNullRealized));
         when(currencyService.toBase(any(BigDecimal.class), anyString()))
                 .thenAnswer(invocation -> convertToInr(invocation.getArgument(0), invocation.getArgument(1)));
-        when(milestoneService.findNext(new BigDecimal("10500.00"))).thenReturn(Optional.of(milestone));
+        when(milestoneService.findNext(new BigDecimal("11200.00"))).thenReturn(Optional.of(milestone));
         when(milestoneService.countAchieved()).thenReturn(2L);
 
         DashboardResponse response = dashboardService.getDashboard();
 
         assertEquals("INR", response.getBaseCurrency());
-        assertEquals(new BigDecimal("9000.00"), response.getTotalInvested());
-        assertEquals(new BigDecimal("10500.00"), response.getTotalCurrentValue());
-        assertEquals(new BigDecimal("1500.00"), response.getUnrealizedPl());
+        assertEquals(new BigDecimal("9500.00"), response.getTotalInvested());
+        assertEquals(new BigDecimal("11200.00"), response.getTotalCurrentValue());
+        assertEquals(new BigDecimal("1700.00"), response.getUnrealizedPl());
         assertEquals(new BigDecimal("1000.00"), response.getRealizedPl());
-        assertEquals(new BigDecimal("2500.00"), response.getOverallPl());
-        assertEquals(new BigDecimal("27.78"), response.getOverallPlPercent());
-        assertEquals(new BigDecimal("400.00"), response.getTodayGainLoss());
-        assertEquals(new BigDecimal("3.96"), response.getTodayGainLossPercent());
+        assertEquals(new BigDecimal("2700.00"), response.getOverallPl());
+        assertEquals(new BigDecimal("28.42"), response.getOverallPlPercent());
+        assertEquals(new BigDecimal("450.00"), response.getTodayGainLoss());
+        assertEquals(new BigDecimal("4.19"), response.getTodayGainLossPercent());
+        assertEquals(1L, response.getCommodityCount());
+        assertEquals(new BigDecimal("700.00"), response.getCommodityValueBase());
         assertEquals(2L, response.getAchievedMilestoneCount());
         assertEquals(milestone, response.getNextMilestone());
 
         Map<String, AllocationItem> byType = toMap(response.getAllocationByType());
         assertEquals(new BigDecimal("9600.00"), byType.get("STOCK").getValueBase());
-        assertEquals(new BigDecimal("91.43"), byType.get("STOCK").getPercentage());
+        assertEquals(new BigDecimal("85.71"), byType.get("STOCK").getPercentage());
         assertEquals(new BigDecimal("900.00"), byType.get("ETF").getValueBase());
-        assertEquals(new BigDecimal("8.57"), byType.get("ETF").getPercentage());
+        assertEquals(new BigDecimal("8.04"), byType.get("ETF").getPercentage());
+        assertEquals(new BigDecimal("700.00"), byType.get("COMMODITY").getValueBase());
+        assertEquals(new BigDecimal("6.25"), byType.get("COMMODITY").getPercentage());
 
         // Allocation lists are sorted descending by base value.
         assertEquals("STOCK", response.getAllocationByType().get(0).getLabel());
         assertEquals("US", response.getAllocationByCountry().get(0).getLabel());
         assertEquals("USD", response.getAllocationByCurrency().get(0).getLabel());
 
-        verify(milestoneService).refreshAchievedStatus(new BigDecimal("10500.00"));
+        verify(milestoneService).refreshAchievedStatus(new BigDecimal("11200.00"));
     }
 
     @Test
@@ -140,6 +153,8 @@ class DashboardServiceTest {
         assertEquals(BigDecimal.ZERO, response.getOverallPlPercent());
         assertEquals(new BigDecimal("0.00"), response.getTodayGainLoss());
         assertEquals(BigDecimal.ZERO, response.getTodayGainLossPercent());
+        assertEquals(0L, response.getCommodityCount());
+        assertEquals(new BigDecimal("0.00"), response.getCommodityValueBase());
         assertEquals(List.of(), response.getAllocationByType());
         assertEquals(List.of(), response.getAllocationByCountry());
         assertEquals(List.of(), response.getAllocationByCurrency());

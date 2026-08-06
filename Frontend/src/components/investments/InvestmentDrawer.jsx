@@ -11,7 +11,8 @@ import {
   toTrimmedString,
 } from '../../utils/validation.js'
 
-const TYPES = ['STOCK', 'ETF', 'FD', 'CASH']
+const TYPES = ['STOCK', 'ETF', 'FD', 'CASH', 'COMMODITY']
+const COMMODITY_TYPES = ['GOLD', 'SILVER', 'CRUDE_OIL', 'NATURAL_GAS', 'COPPER', 'PLATINUM', 'OTHER']
 const COUNTRIES = ['INDIA', 'US', 'UK', 'EUROPE', 'CHINA']
 const CURRENCIES = ['INR', 'USD', 'GBP', 'EUR', 'CNY', 'JPY', 'AED']
 
@@ -21,19 +22,31 @@ const empty = {
   type: 'STOCK',
   country: 'INDIA',
   currency: 'INR',
+  market: '',
+  commodityType: 'GOLD',
   quantity: '',
   purchasePrice: '',
   currentPrice: '',
+  purchaseDate: new Date().toISOString().slice(0, 10),
 }
 
 function validate(form) {
   const errors = {}
+  const isCommodity = form.type === 'COMMODITY'
 
   if (!toTrimmedString(form.symbol)) errors.symbol = VALIDATION_MESSAGES.required
   if (!toTrimmedString(form.name)) errors.name = VALIDATION_MESSAGES.required
   if (!isValidSelection(form.type)) errors.type = VALIDATION_MESSAGES.selectOption
   if (!isValidSelection(form.country)) errors.country = VALIDATION_MESSAGES.selectOption
   if (!isValidSelection(form.currency)) errors.currency = VALIDATION_MESSAGES.selectOption
+
+  if (isCommodity && !toTrimmedString(form.market)) {
+    errors.market = VALIDATION_MESSAGES.required
+  }
+
+  if (isCommodity && !isValidSelection(form.commodityType)) {
+    errors.commodityType = VALIDATION_MESSAGES.selectOption
+  }
 
   if (!isPositiveNumber(form.quantity)) {
     errors.quantity = form.quantity ? VALIDATION_MESSAGES.invalidAmount : VALIDATION_MESSAGES.required
@@ -47,6 +60,10 @@ function validate(form) {
     errors.currentPrice = VALIDATION_MESSAGES.invalidAmount
   }
 
+  if (isCommodity && !toTrimmedString(form.purchaseDate)) {
+    errors.purchaseDate = VALIDATION_MESSAGES.required
+  }
+
   return errors
 }
 
@@ -56,6 +73,7 @@ export default function InvestmentDrawer({ open, onClose, onSubmit, initial }) {
   const [formError, setFormError] = useState('')
   const [saving, setSaving] = useState(false)
   const isEdit = Boolean(initial)
+  const isCommodity = form.type === 'COMMODITY'
 
   useEffect(() => {
     if (open) {
@@ -87,11 +105,14 @@ export default function InvestmentDrawer({ open, onClose, onSubmit, initial }) {
       type: form.type,
       country: form.country,
       currency: form.currency,
+      market: toTrimmedString(form.market),
+      commodityType: form.commodityType,
       quantity: parseNumber(form.quantity),
       avgBuyPrice: parseNumber(form.purchasePrice),
       currentPrice: String(form.currentPrice ?? '').trim()
         ? parseNumber(form.currentPrice)
         : parseNumber(form.purchasePrice),
+      purchaseDate: form.purchaseDate || null,
     }
 
     try {
@@ -109,7 +130,10 @@ export default function InvestmentDrawer({ open, onClose, onSubmit, initial }) {
           type: 'type',
           country: 'country',
           currency: 'currency',
+          market: 'market',
+          commodityType: 'commodityType',
           currentPrice: 'currentPrice',
+          purchaseDate: 'purchaseDate',
         })
       )
       setFormError(getApiErrorMessage(error, 'Unable to save investment. Please review the form and try again.'))
@@ -131,21 +155,19 @@ export default function InvestmentDrawer({ open, onClose, onSubmit, initial }) {
       }
     >
       <form onSubmit={submit} className="space-y-4" noValidate>
-        {/* Symbol Field */}
-        <Field label="Symbol" error={errors.symbol}>
+        <Field label={isCommodity ? 'Commodity symbol / code' : 'Symbol'} error={errors.symbol}>
           <input
             className={clsx(inputClass, errors.symbol && invalidInputClass)}
-            placeholder="e.g. Airtel Ltd or AAPL"
+            placeholder={isCommodity ? 'e.g. GOLD or CRUDE_OIL' : 'e.g. Airtel Ltd or AAPL'}
             value={form.symbol}
             onChange={(e) => set('symbol', e.target.value)}
           />
         </Field>
 
-        {/* Company / Asset Name Field */}
-        <Field label="Company / Holding Name" error={errors.name}>
+        <Field label={isCommodity ? 'Commodity Name' : 'Company / Holding Name'} error={errors.name}>
           <input
             className={clsx(inputClass, errors.name && invalidInputClass)}
-            placeholder="e.g. Airtel Communication Ltd"
+            placeholder={isCommodity ? 'e.g. Gold 24K' : 'e.g. Airtel Communication Ltd'}
             value={form.name}
             onChange={(e) => set('name', e.target.value)}
           />
@@ -175,6 +197,30 @@ export default function InvestmentDrawer({ open, onClose, onSubmit, initial }) {
             ))}
           </select>
         </Field>
+
+        {isCommodity && (
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Commodity type" error={errors.commodityType}>
+              <select
+                className={clsx(inputClass, errors.commodityType && invalidInputClass)}
+                value={form.commodityType}
+                onChange={(e) => set('commodityType', e.target.value)}
+              >
+                {COMMODITY_TYPES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Market / exchange" error={errors.market}>
+              <input
+                className={clsx(inputClass, errors.market && invalidInputClass)}
+                placeholder="e.g. MCX"
+                value={form.market}
+                onChange={(e) => set('market', e.target.value)}
+              />
+            </Field>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Quantity / units" error={errors.quantity}>
@@ -206,6 +252,16 @@ export default function InvestmentDrawer({ open, onClose, onSubmit, initial }) {
             onChange={(e) => set('currentPrice', e.target.value)}
           />
         </Field>
+        {isCommodity && (
+          <Field label="Purchase date" error={errors.purchaseDate}>
+            <input
+              type="date"
+              className={clsx(inputClass, errors.purchaseDate && invalidInputClass)}
+              value={form.purchaseDate}
+              onChange={(e) => set('purchaseDate', e.target.value)}
+            />
+          </Field>
+        )}
         {formError && <p className="text-sm text-brick">{formError}</p>}
       </form>
     </Drawer>

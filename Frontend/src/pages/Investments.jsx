@@ -17,7 +17,7 @@ import { pick } from '../utils/format.js'
 import { getApiErrorMessage } from '../utils/validation.js'
 import { exportInvestmentsToCSV } from '../utils/export.js'
 
-const TYPE_FILTERS = ['ALL', 'STOCK', 'ETF', 'FD', 'CASH']
+const TYPE_FILTERS = ['ALL', 'STOCK', 'ETF', 'FD', 'CASH', 'COMMODITY']
 
 export default function Investments() {
   const { push, baseCurrency } = useApp()

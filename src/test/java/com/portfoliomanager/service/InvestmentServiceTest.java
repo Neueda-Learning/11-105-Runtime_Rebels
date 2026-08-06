@@ -8,6 +8,8 @@ import com.portfoliomanager.exception.ResourceNotFoundException;
 import com.portfoliomanager.model.Investment;
 import com.portfoliomanager.model.InvestmentStatus;
 import com.portfoliomanager.model.InvestmentType;
+import com.portfoliomanager.model.CommodityType;
+import com.portfoliomanager.repository.CommodityRepository;
 import com.portfoliomanager.repository.InvestmentRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,15 +44,65 @@ class InvestmentServiceTest {
     @Mock
     private CurrencyService currencyService;
 
+    @Mock
+    private CommodityRepository commodityRepository;
+
     private InvestmentService investmentService;
 
     @BeforeEach
     void setUp() {
-        investmentService = new InvestmentService(investmentRepository, currencyService);
+        investmentService = new InvestmentService(investmentRepository, currencyService, commodityRepository);
         lenient().when(currencyService.toBase(any(), anyString())).thenAnswer(invocation -> {
             BigDecimal amount = invocation.getArgument(0);
             return amount == null ? BigDecimal.ZERO : amount;
         });
+    }
+
+    @Test
+    void create_commodityCalculatesAmountsAndStoresCommodityDetails() {
+        InvestmentRequest request = new InvestmentRequest();
+        request.setType(InvestmentType.COMMODITY);
+        request.setSymbol("GOLD");
+        request.setName("Gold Bar");
+        request.setCountry("India");
+        request.setCurrency("inr");
+        request.setQuantity(new BigDecimal("2"));
+        request.setAvgBuyPrice(new BigDecimal("5000"));
+        request.setCurrentPrice(new BigDecimal("5500"));
+        request.setPurchaseDate(LocalDate.of(2026, 8, 1));
+        request.setCommodityType(CommodityType.GOLD);
+        request.setMarket("MCX");
+
+        when(investmentRepository.save(any())).thenAnswer(invocation -> {
+            Investment inv = invocation.getArgument(0);
+            inv.setId(101L);
+            return inv;
+        });
+        when(investmentRepository.findById(101L)).thenReturn(Optional.of(
+                Investment.builder()
+                        .id(101L)
+                        .type(InvestmentType.COMMODITY)
+                        .symbol("GOLD")
+                        .name("Gold Bar")
+                        .country("India")
+                        .currency("INR")
+                        .market("MCX")
+                        .commodityType(CommodityType.GOLD)
+                        .quantity(new BigDecimal("2"))
+                        .avgBuyPrice(new BigDecimal("5000"))
+                        .currentPrice(new BigDecimal("5500"))
+                        .investedAmount(new BigDecimal("10000"))
+                        .currentValue(new BigDecimal("11000"))
+                        .previousValue(new BigDecimal("11000"))
+                        .status(InvestmentStatus.ACTIVE)
+                        .build()));
+
+        InvestmentResponse response = investmentService.create(request);
+
+        assertEquals(InvestmentType.COMMODITY, response.getType());
+        assertEquals(new BigDecimal("10000"), response.getInvestedAmount());
+        assertEquals(new BigDecimal("11000"), response.getCurrentValue());
+        verify(commodityRepository).upsertByInvestmentId(any());
     }
 
     @Test

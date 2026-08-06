@@ -84,7 +84,7 @@ public class TransactionService {
     }
 
     private void applyBuy(Investment investment, TransactionRequest request) {
-        requireStockOrEtf(investment, "BUY");
+        requireTradeableType(investment, "BUY");
         BigDecimal qty = requirePositive(request.getQuantity(), "quantity");
         BigDecimal price = requirePositive(request.getPrice(), "price");
 
@@ -104,7 +104,7 @@ public class TransactionService {
     }
 
     private BigDecimal applySell(Investment investment, TransactionRequest request) {
-        requireStockOrEtf(investment, "SELL");
+        requireTradeableType(investment, "SELL");
         BigDecimal qty = requirePositive(request.getQuantity(), "quantity");
         BigDecimal price = requirePositive(request.getPrice(), "price");
 
@@ -151,9 +151,11 @@ public class TransactionService {
         investment.setCurrentValue(nz(investment.getCurrentValue()).add(amount));
     }
 
-    private void requireStockOrEtf(Investment investment, String op) {
-        if (investment.getType() != InvestmentType.STOCK && investment.getType() != InvestmentType.ETF) {
-            throw new InvalidOperationException(op + " transactions are only valid for STOCK/ETF investments");
+    private void requireTradeableType(Investment investment, String op) {
+        if (investment.getType() != InvestmentType.STOCK
+                && investment.getType() != InvestmentType.ETF
+                && investment.getType() != InvestmentType.COMMODITY) {
+            throw new InvalidOperationException(op + " transactions are only valid for STOCK/ETF/COMMODITY investments");
         }
     }
 
