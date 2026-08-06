@@ -93,7 +93,7 @@ pipeline {
                                         set +a
 
                                         for i in $(seq 1 30); do
-                                            if docker exec portfolio-manager-mysql mysql -u"$DB_USERNAME" -p"$DB_PASSWORD" -D "$DB_NAME" -e "SELECT 1" >/dev/null 2>&1; then
+                                            if docker exec portfolio-manager-mysql mysql -uroot -p"$DB_ROOT_PASSWORD" -D "$DB_NAME" -e "SELECT 1" >/dev/null 2>&1; then
                                                 break
                                             fi
                                             if [ "$i" -eq 30 ]; then
@@ -116,7 +116,16 @@ pipeline {
 
         stage('Verify') {
             steps {
-                sh 'docker ps'
+                sh '''
+                    set -e
+                    set -a
+                    . ./.env
+                    set +a
+
+                    docker ps
+                    docker exec portfolio-manager-mysql mysql -uroot -p"$DB_ROOT_PASSWORD" -D "$DB_NAME" -e "SELECT installed_rank,version,description,script,success FROM flyway_schema_history ORDER BY installed_rank;"
+                    docker exec portfolio-manager-mysql mysql -uroot -p"$DB_ROOT_PASSWORD" -D "$DB_NAME" -e "SELECT COUNT(*) AS investments_count FROM investments; SELECT COUNT(*) AS transactions_count FROM transactions;"
+                '''
             }
         }
 
