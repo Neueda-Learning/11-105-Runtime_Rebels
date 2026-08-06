@@ -17,6 +17,18 @@ pipeline {
             }
         }
 
+        stage('Prepare Env File') {
+            steps {
+                withCredentials([file(credentialsId: 'portfolio-env-file', variable: 'ENV_FILE')]) {
+                    sh '''
+                        cp "$ENV_FILE" .env
+                        chmod 600 .env
+                        test -s .env
+                    '''
+                }
+            }
+        }
+
         stage('Build Spring Boot') {
             steps {
                 sh 'mvn clean package -DskipTests'
@@ -27,7 +39,7 @@ pipeline {
             steps {
                 sh '''
                     ${DOCKER_COMPOSE_CMD} version >/dev/null 2>&1 || DOCKER_COMPOSE_CMD="docker-compose"
-                    ${DOCKER_COMPOSE_CMD} down --remove-orphans || true
+                    ${DOCKER_COMPOSE_CMD} --env-file .env down --remove-orphans || true
                     docker rm -f portfolio-manager-mysql portfolio-manager-app portfolio-manager-frontend 2>/dev/null || true
                 '''
             }
@@ -37,7 +49,7 @@ pipeline {
             steps {
                 sh '''
                     ${DOCKER_COMPOSE_CMD} version >/dev/null 2>&1 || DOCKER_COMPOSE_CMD="docker-compose"
-                    ${DOCKER_COMPOSE_CMD} build --no-cache
+                    ${DOCKER_COMPOSE_CMD} --env-file .env build --no-cache
                 '''
             }
         }
@@ -46,7 +58,7 @@ pipeline {
             steps {
                 sh '''
                     ${DOCKER_COMPOSE_CMD} version >/dev/null 2>&1 || DOCKER_COMPOSE_CMD="docker-compose"
-                    ${DOCKER_COMPOSE_CMD} up -d --force-recreate --remove-orphans
+                    ${DOCKER_COMPOSE_CMD} --env-file .env up -d --force-recreate --remove-orphans
                 '''
             }
         }
@@ -55,6 +67,13 @@ pipeline {
             steps {
                 sh 'docker ps'
             }
+        }
+
+    }
+
+    post {
+        always {
+            sh 'rm -f .env || true'
         }
     }
 }  
