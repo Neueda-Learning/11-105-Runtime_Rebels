@@ -1,10 +1,16 @@
 import { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { CheckCircle2, AlertCircle, X } from 'lucide-react'
-import { getAuthToken, getBaseCurrency, getCurrentUser, setAuthToken } from '../api/client'
+import { getAuthToken, getBaseCurrency, setAuthToken } from '../api/client'
 
 const AppCtx = createContext(null)
 const VALID_THEMES = new Set(['light', 'dark', 'system'])
+const LOCAL_USER = {
+  id: 1,
+  email: 'local.user@example.local',
+  displayName: 'Local User',
+  avatarUrl: null,
+}
 
 function getInitialTheme() {
   const stored = localStorage.getItem('pm-theme')
@@ -56,7 +62,6 @@ export function AppProvider({ children }) {
     setAuthToken(null)
     setUser(null)
     setBaseCurrencyState('INR')
-    window.google?.accounts?.id?.disableAutoSelect?.()
   }, [])
 
   const bootstrapAuth = useCallback(async () => {
@@ -67,25 +72,15 @@ export function AppProvider({ children }) {
       return
     }
 
-    try {
-      const profile = await getCurrentUser()
-      setUser(profile)
-    } catch (error) {
-      signOut()
-    } finally {
-      setAuthReady(true)
-    }
-  }, [signOut])
+    setUser(LOCAL_USER)
+    setAuthReady(true)
+  }, [])
 
-  const signInWithGoogleToken = useCallback(
-    async (token) => {
-      setAuthToken(token)
-      const profile = await getCurrentUser()
-      setUser(profile)
-      return profile
-    },
-    []
-  )
+  const signIn = useCallback(async () => {
+    setAuthToken('local-session')
+    setUser(LOCAL_USER)
+    return LOCAL_USER
+  }, [])
 
   useEffect(() => {
     bootstrapAuth()
@@ -109,12 +104,12 @@ export function AppProvider({ children }) {
       user,
       authReady,
       isAuthenticated: Boolean(user),
-      signInWithGoogleToken,
+      signIn,
       signOut,
       baseCurrency,
       setBaseCurrency: setBaseCurrencyState,
     }),
-    [theme, toasts, user, authReady, signInWithGoogleToken, signOut, baseCurrency]
+    [theme, toasts, user, authReady, signIn, signOut, baseCurrency]
   )
 
   return (

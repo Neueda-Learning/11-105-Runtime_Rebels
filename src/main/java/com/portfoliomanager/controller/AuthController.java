@@ -20,7 +20,7 @@ public class AuthController {
         this.currentUserService = currentUserService;
     }
 
-    @Operation(summary = "Get the currently authenticated Google user")
+    @Operation(summary = "Get the currently authenticated user")
     @GetMapping("/me")
     public AuthUserResponse me() {
         AppUser user = currentUserService.getCurrentUser();
