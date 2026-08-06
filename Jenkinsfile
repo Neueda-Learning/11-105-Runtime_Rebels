@@ -73,6 +73,46 @@ pipeline {
             }
         }
 
+                stage('Seed Mock Data') {
+                        steps {
+                                sh '''
+                                        set -e
+
+                                        if command -v python3 >/dev/null 2>&1; then
+                                            PYTHON_BIN="python3"
+                                        elif command -v python >/dev/null 2>&1; then
+                                            PYTHON_BIN="python"
+                                        else
+                                            echo "Python is not available on Jenkins agent."
+                                            exit 1
+                                        fi
+
+                                        set -a
+                                        . ./.env
+                                        set +a
+
+                                        for i in $(seq 1 30); do
+                                            if docker exec portfolio-manager-mysql mysql -u"$DB_USERNAME" -p"$DB_PASSWORD" -D "$DB_NAME" -e "SELECT 1" >/dev/null 2>&1; then
+                                                break
+                                            fi
+                                            if [ "$i" -eq 30 ]; then
+                                                echo "MySQL did not become ready in time."
+                                                exit 1
+                                            fi
+                                            sleep 5
+                                        done
+
+                                        "$PYTHON_BIN" -m pip install -r scripts/requirements.txt
+                                        "$PYTHON_BIN" scripts/seed_mock_data.py \
+                                            --host localhost \
+                                            --port "${DB_PORT:-3306}" \
+                                            --database "$DB_NAME" \
+                                            --user "$DB_USERNAME" \
+                                            --password "$DB_PASSWORD"
+                                '''
+                        }
+                }
+
         stage('Verify') {
             steps {
                 sh 'docker ps'
