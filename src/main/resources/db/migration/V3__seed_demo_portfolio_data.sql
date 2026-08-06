@@ -44,11 +44,6 @@ VALUES
 -- -----------------------------
 -- 1b) Bulk demo investments (300 rows)
 -- -----------------------------
-WITH RECURSIVE seq AS (
-    SELECT 1 AS n
-    UNION ALL
-    SELECT n + 1 FROM seq WHERE n < 300
-)
 INSERT INTO investments
 (type, symbol, name, country, currency, quantity, avg_buy_price, current_price,
  invested_amount, current_value, previous_value, interest_rate, maturity_date,
@@ -78,9 +73,23 @@ FROM (
         n,
         ROUND(5 + ((n % 40) * 1.250000), 6) AS qty,
         ROUND(20 + ((n % 90) * 3.500000), 6) AS avg_price
-    FROM seq
+    FROM (
+        SELECT (h.d * 100 + t.d * 10 + o.d) AS n
+        FROM (
+            SELECT 0 AS d UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3
+        ) h
+        CROSS JOIN (
+            SELECT 0 AS d UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4
+            UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9
+        ) t
+        CROSS JOIN (
+            SELECT 0 AS d UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4
+            UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9
+        ) o
+    ) numbers
 ) s
-WHERE NOT EXISTS (
+WHERE s.n BETWEEN 1 AND 300
+    AND NOT EXISTS (
     SELECT 1
     FROM investments i
     WHERE i.symbol = CONCAT('DINV', LPAD(s.n, 3, '0'))
@@ -155,11 +164,6 @@ VALUES
 -- -----------------------------
 -- 4) Longer chart history for dashboard (120 days)
 -- -----------------------------
-WITH RECURSIVE seq AS (
-    SELECT 0 AS n
-    UNION ALL
-    SELECT n + 1 FROM seq WHERE n < 119
-)
 INSERT INTO portfolio_snapshots
 (snapshot_date, total_invested_base, total_value_base, realized_pl_base, unrealized_pl_base)
 SELECT
@@ -168,8 +172,19 @@ SELECT
     ROUND(2465000 + (s.n * 16120) + ((s.n % 7) * 2200), 6) AS total_value_base,
     ROUND(85000 + (s.n * 520), 6) AS realized_pl_base,
     ROUND((2465000 + (s.n * 16120) + ((s.n % 7) * 2200)) - (2400000 + (s.n * 15500)), 6) AS unrealized_pl_base
-FROM seq s
-WHERE NOT EXISTS (
+FROM (
+    SELECT (t.d * 10 + o.d) AS n
+    FROM (
+        SELECT 0 AS d UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4
+        UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9
+    ) t
+    CROSS JOIN (
+        SELECT 0 AS d UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4
+        UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9
+    ) o
+) s
+WHERE s.n < 120
+    AND NOT EXISTS (
     SELECT 1
     FROM portfolio_snapshots ps
     WHERE ps.snapshot_date = DATE_SUB(CURDATE(), INTERVAL (119 - s.n) DAY)
