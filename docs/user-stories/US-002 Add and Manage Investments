@@ -1,1 +1,7 @@
+User story:
+As a customer, I want to add and update my investments, so that my portfolio remains accurate.
 
+Acceptance criteria:
+- Given valid investment details, when I create an investment, then it is saved with type, symbol, country, and currency.
+- Given an existing investment, when I edit supported fields, then updates are saved and visible.
+- Given I no longer need a holding, when I delete it, then it is removed from active views.
