@@ -1,48 +1,22 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { ShieldCheck } from 'lucide-react'
 import { useApp } from '../context/AppContext.jsx'
 import { Button, Card } from '../components/ui.jsx'
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
-
 export default function SignIn() {
-  const { signInWithGoogleToken, push } = useApp()
-  const googleButtonRef = useRef(null)
+  const { signIn, push } = useApp()
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
-    if (!GOOGLE_CLIENT_ID) {
-      return
+  const handleSignIn = async () => {
+    setLoading(true)
+    try {
+      await signIn()
+    } catch (error) {
+      push(error.message || 'Sign-in failed.', 'error')
+    } finally {
+      setLoading(false)
     }
-
-    const google = window.google
-    if (!google?.accounts?.id || !googleButtonRef.current) {
-      return
-    }
-
-    google.accounts.id.initialize({
-      client_id: GOOGLE_CLIENT_ID,
-      callback: async ({ credential }) => {
-        if (!credential) return
-        setLoading(true)
-        try {
-          await signInWithGoogleToken(credential)
-        } catch (error) {
-          push(error.message || 'Sign-in failed.', 'error')
-        } finally {
-          setLoading(false)
-        }
-      },
-    })
-
-    google.accounts.id.renderButton(googleButtonRef.current, {
-      theme: 'outline',
-      size: 'large',
-      shape: 'pill',
-      text: 'signin_with',
-      width: 280,
-    })
-  }, [push, signInWithGoogleToken])
+  }
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10">
@@ -54,35 +28,20 @@ export default function SignIn() {
           </div>
           <div>
             <p className="font-display text-2xl text-ink">Wealth Ledger</p>
-            <p className="text-sm text-ink-faint">Personal portfolio access with Google sign-in.</p>
+            <p className="text-sm text-ink-faint">Personal portfolio access with simple sign-in.</p>
           </div>
         </div>
 
         <div className="space-y-4">
           <div className="rounded-2xl border border-line/70 bg-paper px-4 py-4 text-sm text-ink-soft">
-            Each Google account gets its own investments, milestones, settings, and dashboard history.
+            Continue with local authentication to access your portfolio dashboard.
           </div>
 
-          {GOOGLE_CLIENT_ID ? (
-            <div className="flex justify-center" ref={googleButtonRef} />
-          ) : (
-            <div className="rounded-2xl border border-brick/30 bg-brick/5 px-4 py-4 text-sm text-brick">
-              Set VITE_GOOGLE_CLIENT_ID in the frontend environment to enable Google sign-in.
-            </div>
-          )}
-
-          {loading && (
-            <p className="text-center text-sm text-ink-faint">Signing you in...</p>
-          )}
-
-          <Button
-            type="button"
-            variant="ghost"
-            className="w-full"
-            onClick={() => window.location.reload()}
-          >
-            Reload Google sign-in
+          <Button type="button" className="w-full" onClick={handleSignIn} disabled={loading}>
+            {loading ? 'Signing you in...' : 'Sign in'}
           </Button>
+
+          <p className="text-center text-xs text-ink-faint">No external OAuth provider is required.</p>
         </div>
       </Card>
     </div>
