@@ -1,1 +1,8 @@
 
+User story:
+As a customer, I want milestones for wealth targets, so that I can track progress against goals.
+
+Acceptance criteria:
+- Given a threshold is reached, when dashboard is refreshed, then milestone is marked achieved with achieved date.
+- Given multiple milestones, when dashboard loads, then next milestone and progress are displayed.
+- Given custom milestones, when I add or delete one, then list updates correctly.
