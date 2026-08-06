@@ -1,1 +1,8 @@
 
+User story:
+As a frontend developer, I want clear API documentation, so that I can integrate endpoints with confidence.
+
+Acceptance criteria:
+- Given backend is running, when Swagger UI is opened, then all active endpoints are visible.
+- Given an endpoint contract, when tested via Swagger, then request and response structures are clear.
+- Given invalid input, when request fails validation, then error messages are meaningful.
