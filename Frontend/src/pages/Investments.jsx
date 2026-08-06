@@ -187,6 +187,7 @@ export default function Investments() {
       <InvestmentDrawer
         open={drawer.open}
         initial={drawer.initial}
+        investments={rawInvestments}
         onClose={() => setDrawer({ open: false, initial: null })}
         onSubmit={handleSubmit}
       />

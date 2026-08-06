@@ -10,6 +10,7 @@ import {
   parseNumber,
   toTrimmedString,
 } from '../../utils/validation.js'
+import { pick } from '../../utils/format.js'
 
 const TYPES = ['STOCK', 'ETF', 'FD', 'CASH']
 const COUNTRIES = ['INDIA', 'US', 'UK', 'EUROPE', 'CHINA']
@@ -24,6 +25,10 @@ const empty = {
   quantity: '',
   purchasePrice: '',
   currentPrice: '',
+}
+
+function normalizeSymbol(value) {
+  return toTrimmedString(value).toUpperCase()
 }
 
 function validate(form) {
@@ -50,12 +55,32 @@ function validate(form) {
   return errors
 }
 
-export default function InvestmentDrawer({ open, onClose, onSubmit, initial }) {
+export default function InvestmentDrawer({ open, onClose, onSubmit, initial, investments = [] }) {
   const [form, setForm] = useState(empty)
   const [errors, setErrors] = useState({})
   const [formError, setFormError] = useState('')
   const [saving, setSaving] = useState(false)
   const isEdit = Boolean(initial)
+  const normalizedSymbol = normalizeSymbol(form.symbol)
+  const normalizedName = toTrimmedString(form.name).toLowerCase()
+
+  const symbolSuggestions = !isEdit && normalizedSymbol
+    ? investments
+        .filter((investment) => {
+          const symbol = normalizeSymbol(pick(investment, ['symbol']))
+          const name = toTrimmedString(pick(investment, ['name'], '')).toLowerCase()
+          return symbol.startsWith(normalizedSymbol) || (normalizedName && name.startsWith(normalizedName)) || name.startsWith(normalizedSymbol.toLowerCase())
+        })
+        .slice(0, 6)
+    : []
+
+  const exactMergeMatch = !isEdit && normalizedSymbol
+    ? investments.find((investment) => {
+        const symbol = normalizeSymbol(pick(investment, ['symbol']))
+        const type = pick(investment, ['type'])
+        return symbol === normalizedSymbol && type === form.type
+      })
+    : null
 
   useEffect(() => {
     if (open) {
@@ -70,6 +95,19 @@ export default function InvestmentDrawer({ open, onClose, onSubmit, initial }) {
     setErrors((prev) => ({ ...prev, [key]: '' }))
     setFormError('')
     setForm((f) => ({ ...f, [key]: value }))
+  }
+
+  function applySuggestion(investment) {
+    setErrors((prev) => ({ ...prev, symbol: '', name: '' }))
+    setFormError('')
+    setForm((current) => ({
+      ...current,
+      symbol: pick(investment, ['symbol'], current.symbol),
+      name: pick(investment, ['name'], current.name),
+      type: pick(investment, ['type'], current.type),
+      country: pick(investment, ['country'], current.country),
+      currency: pick(investment, ['currency'], current.currency),
+    }))
   }
 
   async function submit(e) {
@@ -132,13 +170,46 @@ export default function InvestmentDrawer({ open, onClose, onSubmit, initial }) {
     >
       <form onSubmit={submit} className="space-y-4" noValidate>
         {/* Symbol Field */}
-        <Field label="Symbol" error={errors.symbol}>
-          <input
-            className={clsx(inputClass, errors.symbol && invalidInputClass)}
-            placeholder="e.g. Airtel Ltd or AAPL"
-            value={form.symbol}
-            onChange={(e) => set('symbol', e.target.value)}
-          />
+        <Field
+          label="Symbol"
+          error={errors.symbol}
+          hint={exactMergeMatch ? 'Exact match found. Saving will add to this existing holding instead of creating a duplicate.' : 'Start typing a symbol to see matching holdings.'}
+        >
+          <div>
+            <input
+              className={clsx(inputClass, errors.symbol && invalidInputClass)}
+              placeholder="e.g. AAPL or RELIANCE"
+              value={form.symbol}
+              onChange={(e) => set('symbol', e.target.value)}
+            />
+
+            {symbolSuggestions.length > 0 && (
+              <div className="mt-2 overflow-hidden rounded-xl border border-line bg-paper-raised shadow-glass-sm">
+                {symbolSuggestions.map((investment) => {
+                  const symbol = pick(investment, ['symbol'], 'Unknown')
+                  const name = pick(investment, ['name'], 'Unnamed holding')
+                  const type = pick(investment, ['type'], 'Investment')
+
+                  return (
+                    <button
+                      key={pick(investment, ['id'], `${symbol}-${type}`)}
+                      type="button"
+                      className="flex w-full items-center justify-between gap-3 border-b border-line/60 px-3 py-2 text-left last:border-b-0 hover:bg-paper-sunken"
+                      onClick={() => applySuggestion(investment)}
+                    >
+                      <div>
+                        <p className="text-sm font-semibold text-ink">{symbol}</p>
+                        <p className="text-xs text-ink-faint">{name}</p>
+                      </div>
+                      <span className="shrink-0 rounded-full bg-paper-sunken px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+                        {type}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
         </Field>
 
         {/* Company / Asset Name Field */}

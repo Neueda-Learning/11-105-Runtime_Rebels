@@ -33,6 +33,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 class InvestmentServiceTest {
@@ -92,6 +93,52 @@ class InvestmentServiceTest {
 
         assertEquals(1L, response.getId());
         assertEquals(new BigDecimal("0.00"), response.getUnrealizedPlPercent());
+    }
+
+    @Test
+    void create_stockWithExistingSymbolMergesIntoActiveHolding() {
+        InvestmentRequest request = new InvestmentRequest();
+        request.setType(InvestmentType.STOCK);
+        request.setSymbol("aapl");
+        request.setName("Apple Inc.");
+        request.setCountry("US");
+        request.setCurrency("usd");
+        request.setQuantity(new BigDecimal("5"));
+        request.setAvgBuyPrice(new BigDecimal("160"));
+        request.setCurrentPrice(new BigDecimal("180"));
+
+        Investment existing = baseInvestment(7L, InvestmentType.STOCK);
+        existing.setSymbol("AAPL");
+        existing.setName("Apple");
+        existing.setQuantity(new BigDecimal("10"));
+        existing.setAvgBuyPrice(new BigDecimal("100"));
+        existing.setCurrentPrice(new BigDecimal("150"));
+        existing.setInvestedAmount(new BigDecimal("1000"));
+        existing.setCurrentValue(new BigDecimal("1500"));
+        existing.setPreviousValue(new BigDecimal("1450"));
+
+        when(investmentRepository.findActiveBySymbolAndType(eq(1L), eq("AAPL"), eq(InvestmentType.STOCK)))
+                .thenReturn(Optional.of(existing));
+        when(investmentRepository.update(eq(1L), any())).thenAnswer(invocation -> invocation.getArgument(1));
+
+        InvestmentResponse response = investmentService.create(request);
+
+        ArgumentCaptor<Investment> captor = ArgumentCaptor.forClass(Investment.class);
+        verify(investmentRepository).update(eq(1L), captor.capture());
+        verify(investmentRepository, never()).save(anyLong(), any());
+
+        Investment updated = captor.getValue();
+        assertEquals("AAPL", updated.getSymbol());
+        assertEquals(new BigDecimal("15"), updated.getQuantity());
+        assertEquals(new BigDecimal("120.000000"), updated.getAvgBuyPrice());
+        assertEquals(new BigDecimal("180"), updated.getCurrentPrice());
+        assertEquals(new BigDecimal("1800.000000"), updated.getInvestedAmount());
+        assertEquals(new BigDecimal("2700"), updated.getCurrentValue());
+        assertEquals(new BigDecimal("1450"), updated.getPreviousValue());
+
+        assertEquals(7L, response.getId());
+        assertEquals("AAPL", response.getSymbol());
+        assertEquals(new BigDecimal("15"), response.getQuantity());
     }
 
     @Test
