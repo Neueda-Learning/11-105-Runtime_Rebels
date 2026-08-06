@@ -24,11 +24,13 @@ public class MilestoneRepository {
     }
 
     public List<Milestone> findAll(Long userId) {
-        return jdbcTemplate.query("SELECT * FROM milestones WHERE user_id = ? ORDER BY threshold_value_base ASC", rowMapper, userId);
+        return jdbcTemplate.query("SELECT * FROM milestones WHERE user_id = ? ORDER BY threshold_value_base ASC",
+                rowMapper, userId);
     }
 
     public Optional<Milestone> findById(Long userId, Long id) {
-        return jdbcTemplate.query("SELECT * FROM milestones WHERE user_id = ? AND id = ?", rowMapper, userId, id).stream().findFirst();
+        return jdbcTemplate.query("SELECT * FROM milestones WHERE user_id = ? AND id = ?", rowMapper, userId, id)
+                .stream().findFirst();
     }
 
     public Milestone save(Long userId, Milestone m) {
@@ -49,7 +51,8 @@ public class MilestoneRepository {
 
     public void markAchieved(Long userId, Long id, LocalDate achievedDate) {
         jdbcTemplate.update(
-                "UPDATE milestones SET achieved = TRUE, achieved_date = ? WHERE user_id = ? AND id = ?", achievedDate, userId, id);
+                "UPDATE milestones SET achieved = TRUE, achieved_date = ? WHERE user_id = ? AND id = ?", achievedDate,
+                userId, id);
     }
 
     public boolean deleteById(Long userId, Long id) {

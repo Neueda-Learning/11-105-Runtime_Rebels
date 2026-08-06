@@ -16,9 +16,12 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Builds the single consolidated dashboard the customer asked for: total invested,
- * current value, overall P/L, % return, today's gain/loss, realized vs unrealized P/L,
- * and asset allocation breakdowns - all converted into the customer's base currency.
+ * Builds the single consolidated dashboard the customer asked for: total
+ * invested,
+ * current value, overall P/L, % return, today's gain/loss, realized vs
+ * unrealized P/L,
+ * and asset allocation breakdowns - all converted into the customer's base
+ * currency.
  */
 @Service
 public class DashboardService {
@@ -30,10 +33,10 @@ public class DashboardService {
     private final CurrentUserService currentUserService;
 
     public DashboardService(InvestmentRepository investmentRepository,
-                             TransactionRepository transactionRepository,
-                             CurrencyService currencyService,
-                             MilestoneService milestoneService,
-                             CurrentUserService currentUserService) {
+            TransactionRepository transactionRepository,
+            CurrencyService currencyService,
+            MilestoneService milestoneService,
+            CurrentUserService currentUserService) {
         this.investmentRepository = investmentRepository;
         this.transactionRepository = transactionRepository;
         this.currencyService = currencyService;
@@ -101,8 +104,8 @@ public class DashboardService {
     }
 
     private List<AllocationItem> allocationBy(List<Investment> investments,
-                                               java.util.function.Function<Investment, String> classifier,
-                                               BigDecimal totalBase) {
+            java.util.function.Function<Investment, String> classifier,
+            BigDecimal totalBase) {
         Map<String, BigDecimal> grouped = investments.stream().collect(Collectors.groupingBy(
                 classifier,
                 Collectors.reducing(BigDecimal.ZERO,

@@ -31,7 +31,8 @@ public class TransactionRepository {
 
     public List<Transaction> findAll(Long userId) {
         return jdbcTemplate.query(
-                "SELECT t.* FROM transactions t JOIN investments i ON i.id = t.investment_id WHERE i.user_id = ? ORDER BY t.transaction_date DESC, t.id DESC", rowMapper, userId);
+                "SELECT t.* FROM transactions t JOIN investments i ON i.id = t.investment_id WHERE i.user_id = ? ORDER BY t.transaction_date DESC, t.id DESC",
+                rowMapper, userId);
     }
 
     public Optional<Transaction> findById(Long id) {
@@ -64,10 +65,14 @@ public class TransactionRepository {
         return findById(newId).orElseThrow();
     }
 
-    /** Sum of realized P/L across all SELL transactions, in instrument currency per row - conversion happens in the service layer. */
+    /**
+     * Sum of realized P/L across all SELL transactions, in instrument currency per
+     * row - conversion happens in the service layer.
+     */
     public List<Transaction> findAllRealizedPlTransactions(Long userId) {
         return jdbcTemplate.query(
-                "SELECT t.* FROM transactions t JOIN investments i ON i.id = t.investment_id WHERE i.user_id = ? AND t.type = 'SELL' AND t.realized_pl IS NOT NULL", rowMapper, userId);
+                "SELECT t.* FROM transactions t JOIN investments i ON i.id = t.investment_id WHERE i.user_id = ? AND t.type = 'SELL' AND t.realized_pl IS NOT NULL",
+                rowMapper, userId);
     }
 
     public boolean deleteById(Long id) {

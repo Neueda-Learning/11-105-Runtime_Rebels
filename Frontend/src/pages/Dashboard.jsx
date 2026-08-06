@@ -23,7 +23,7 @@ export default function Dashboard() {
   // console.log('performance.data',performance.data);
   const activity = useAsync(() => listAllTransactions({ limit: 6, sort: 'desc' }), [])
   // console.log('activity.data',activity.data);
-  
+
   const investmentsAsync = useAsync(listInvestments, [])
   const data = dashboard.data || {}
   const dashboardMovers = pick(data, ['topMovers', 'investments'], []) || []
@@ -38,21 +38,21 @@ export default function Dashboard() {
   const allocation = pick(data, ['allocation', 'assetAllocation', 'allocationByCountry', 'allocationByCurrency', 'allocationByType'], []) || []
   // console.log('allocation', allocation)
   const milestones = pick(data, ['milestones', 'upcomingMilestones'], []) || []
-  
+
   const performancePoints = Array.isArray(performance.data)
     ? performance.data
     : pick(performance.data, ['points', 'history'], []) || []
   const transactions = Array.isArray(activity.data)
     ? activity.data
     : pick(activity.data, ['transactions', 'content'], []) || []
-    // console.log(transactions)
+  // console.log(transactions)
 
   async function handleSnapshot() {
     try {
       await triggerSnapshot()
       push('Today\u2019s wealth snapshot has been recorded.')
       dashboard.refetch()
-      investmentsAsync.refetch()  
+      investmentsAsync.refetch()
     } catch (e) {
       push(e.message, 'error')
     }
@@ -74,15 +74,15 @@ export default function Dashboard() {
         </Button>
       </div>
 
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-      <NetWorthHero data={data} loading={dashboard.loading} currency={baseCurrency} />
-      <NextMilestoneCard
-    milestone={data.nextMilestone}
-    totalCurrentValue={data.totalCurrentValue}
-    currency={data.baseCurrency}
-    loading={dashboard.loading}
-/>
-    </div>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <NetWorthHero data={data} loading={dashboard.loading} currency={baseCurrency} />
+        <NextMilestoneCard
+          milestone={data.nextMilestone}
+          totalCurrentValue={data.totalCurrentValue}
+          currency={data.baseCurrency}
+          loading={dashboard.loading}
+        />
+      </div>
 
       <PerformanceChart
         points={performancePoints}
@@ -101,7 +101,7 @@ export default function Dashboard() {
           baseCurrency={data.baseCurrency}
           loading={dashboard.loading} />
         <MoversCard investments={allInvestments} loading={dashboard.loading} currency={baseCurrency} />
-        
+
       </div>
 
       <RecentActivityCard transactions={transactions} loading={activity.loading} currency={baseCurrency} />

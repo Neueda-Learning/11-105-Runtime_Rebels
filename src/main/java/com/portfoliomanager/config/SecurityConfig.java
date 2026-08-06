@@ -61,7 +61,8 @@ public class SecurityConfig {
                 return OAuth2TokenValidatorResult.success();
             }
 
-            OAuth2Error error = new OAuth2Error("invalid_token", "Token audience does not match configured Google client id", null);
+            OAuth2Error error = new OAuth2Error("invalid_token",
+                    "Token audience does not match configured Google client id", null);
             return OAuth2TokenValidatorResult.failure(error);
         };
 

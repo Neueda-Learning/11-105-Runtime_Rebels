@@ -15,8 +15,10 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Manages wealth-related, feel-good milestones the customer asked for - e.g. comparing
- * the portfolio's current value against something aspirational like a luxury car.
+ * Manages wealth-related, feel-good milestones the customer asked for - e.g.
+ * comparing
+ * the portfolio's current value against something aspirational like a luxury
+ * car.
  */
 @Service
 public class MilestoneService {
@@ -51,7 +53,10 @@ public class MilestoneService {
         }
     }
 
-    /** Marks any milestone whose threshold has now been crossed as achieved. Called after dashboard recompute. */
+    /**
+     * Marks any milestone whose threshold has now been crossed as achieved. Called
+     * after dashboard recompute.
+     */
     public void refreshAchievedStatus(BigDecimal currentPortfolioValueBase) {
         Long userId = currentUserService.getCurrentUserId();
         for (Milestone m : milestoneRepository.findAll(userId)) {
@@ -61,7 +66,10 @@ public class MilestoneService {
         }
     }
 
-    /** The next unachieved milestone (smallest threshold not yet reached) - useful for a "how close am I" widget. */
+    /**
+     * The next unachieved milestone (smallest threshold not yet reached) - useful
+     * for a "how close am I" widget.
+     */
     public Optional<MilestoneResponse> findNext(BigDecimal currentPortfolioValueBase) {
         return milestoneRepository.findAll(currentUserService.getCurrentUserId()).stream()
                 .filter(m -> !m.isAchieved())
@@ -70,7 +78,8 @@ public class MilestoneService {
     }
 
     public long countAchieved() {
-        return milestoneRepository.findAll(currentUserService.getCurrentUserId()).stream().filter(Milestone::isAchieved).count();
+        return milestoneRepository.findAll(currentUserService.getCurrentUserId()).stream().filter(Milestone::isAchieved)
+                .count();
     }
 
     private MilestoneResponse toResponse(Milestone m, BigDecimal currentPortfolioValueBase) {

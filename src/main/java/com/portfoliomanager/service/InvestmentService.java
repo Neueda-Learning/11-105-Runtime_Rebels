@@ -23,8 +23,8 @@ public class InvestmentService {
     private final CurrentUserService currentUserService;
 
     public InvestmentService(InvestmentRepository investmentRepository,
-                             CurrencyService currencyService,
-                             CurrentUserService currentUserService) {
+            CurrencyService currencyService,
+            CurrentUserService currentUserService) {
         this.investmentRepository = investmentRepository;
         this.currencyService = currencyService;
         this.currentUserService = currentUserService;

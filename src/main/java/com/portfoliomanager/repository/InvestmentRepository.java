@@ -47,7 +47,8 @@ public class InvestmentRepository {
     }
 
     public List<Investment> findAllActive(Long userId) {
-        return jdbcTemplate.query("SELECT * FROM investments WHERE user_id = ? AND status = 'ACTIVE'", rowMapper, userId);
+        return jdbcTemplate.query("SELECT * FROM investments WHERE user_id = ? AND status = 'ACTIVE'", rowMapper,
+                userId);
     }
 
     public Optional<Investment> findById(Long userId, Long id) {
@@ -107,15 +108,21 @@ public class InvestmentRepository {
                 inv.getInvestedAmount(), inv.getCurrentValue(), inv.getPreviousValue(),
                 inv.getInterestRate(), inv.getMaturityDate(), inv.getPurchaseDate(),
                 inv.getStatus().name(), inv.getNotes(), userId, inv.getId());
-            return findById(userId, inv.getId()).orElseThrow();
+        return findById(userId, inv.getId()).orElseThrow();
     }
 
-    /** Roll every active investment's current_value into previous_value - used by the daily snapshot job. */
+    /**
+     * Roll every active investment's current_value into previous_value - used by
+     * the daily snapshot job.
+     */
     public void rollCurrentValueIntoPrevious(Long userId) {
-        jdbcTemplate.update("UPDATE investments SET previous_value = current_value WHERE user_id = ? AND status = 'ACTIVE'", userId);
+        jdbcTemplate.update(
+                "UPDATE investments SET previous_value = current_value WHERE user_id = ? AND status = 'ACTIVE'",
+                userId);
     }
 
-    public void updatePrice(Long userId, Long id, java.math.BigDecimal currentPrice, java.math.BigDecimal currentValue) {
+    public void updatePrice(Long userId, Long id, java.math.BigDecimal currentPrice,
+            java.math.BigDecimal currentValue) {
         jdbcTemplate.update(
                 "UPDATE investments SET current_price = ?, current_value = ? WHERE user_id = ? AND id = ?",
                 currentPrice, currentValue, userId, id);

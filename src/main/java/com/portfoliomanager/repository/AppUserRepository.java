@@ -21,28 +21,25 @@ public class AppUserRepository {
         return jdbcTemplate.query(
                 "SELECT * FROM app_users WHERE google_subject = ?",
                 rowMapper,
-                googleSubject
-        ).stream().findFirst();
+                googleSubject).stream().findFirst();
     }
 
     public AppUser upsertByGoogleSubject(String googleSubject, String email, String displayName, String avatarUrl) {
         int updated = jdbcTemplate.update(
                 """
-                UPDATE app_users
-                SET email = ?, display_name = ?, avatar_url = ?
-                WHERE google_subject = ?
-                """,
-                email, displayName, avatarUrl, googleSubject
-        );
+                        UPDATE app_users
+                        SET email = ?, display_name = ?, avatar_url = ?
+                        WHERE google_subject = ?
+                        """,
+                email, displayName, avatarUrl, googleSubject);
 
         if (updated == 0) {
             jdbcTemplate.update(
                     """
-                    INSERT INTO app_users (google_subject, email, display_name, avatar_url)
-                    VALUES (?,?,?,?)
-                    """,
-                    googleSubject, email, displayName, avatarUrl
-            );
+                            INSERT INTO app_users (google_subject, email, display_name, avatar_url)
+                            VALUES (?,?,?,?)
+                            """,
+                    googleSubject, email, displayName, avatarUrl);
         }
 
         return findByGoogleSubject(googleSubject).orElseThrow();

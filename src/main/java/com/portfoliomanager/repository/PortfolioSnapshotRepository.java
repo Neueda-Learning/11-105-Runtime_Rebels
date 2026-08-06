@@ -29,23 +29,26 @@ public class PortfolioSnapshotRepository {
                 "SELECT * FROM portfolio_snapshots WHERE user_id = ? ORDER BY snapshot_date ASC", rowMapper, userId);
     }
 
-    /** Insert today's snapshot, or update it if one already exists for the date (idempotent). */
+    /**
+     * Insert today's snapshot, or update it if one already exists for the date
+     * (idempotent).
+     */
     public void upsert(Long userId, PortfolioSnapshot s) {
         int updated = jdbcTemplate.update(
                 """
-                UPDATE portfolio_snapshots SET total_invested_base = ?, total_value_base = ?,
-                    realized_pl_base = ?, unrealized_pl_base = ? WHERE user_id = ? AND snapshot_date = ?
-                """,
+                        UPDATE portfolio_snapshots SET total_invested_base = ?, total_value_base = ?,
+                            realized_pl_base = ?, unrealized_pl_base = ? WHERE user_id = ? AND snapshot_date = ?
+                        """,
                 s.getTotalInvestedBase(), s.getTotalValueBase(), s.getRealizedPlBase(),
                 s.getUnrealizedPlBase(), userId, s.getSnapshotDate());
 
         if (updated == 0) {
             jdbcTemplate.update(
                     """
-                    INSERT INTO portfolio_snapshots
-                        (user_id, snapshot_date, total_invested_base, total_value_base, realized_pl_base, unrealized_pl_base)
-                    VALUES (?,?,?,?,?,?)
-                    """,
+                            INSERT INTO portfolio_snapshots
+                                (user_id, snapshot_date, total_invested_base, total_value_base, realized_pl_base, unrealized_pl_base)
+                            VALUES (?,?,?,?,?,?)
+                            """,
                     userId, s.getSnapshotDate(), s.getTotalInvestedBase(), s.getTotalValueBase(),
                     s.getRealizedPlBase(), s.getUnrealizedPlBase());
         }
