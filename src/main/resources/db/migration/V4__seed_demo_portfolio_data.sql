@@ -1,54 +1,62 @@
 -- =====================================================================================
--- Demo portfolio data (V3)
+-- Demo portfolio data (V4)
 -- Purpose: showcase-ready sample dataset for dashboard, holdings, transactions, and trends.
--- Safe for normal backend flow: valid enum values, valid FK references, realistic value ranges.
+-- Safe for multi-user flow: all user-scoped rows are seeded for a valid app_users record.
 -- =====================================================================================
+
+-- Ensure a deterministic seed user exists and capture its id.
+INSERT INTO app_users (google_subject, email, display_name)
+VALUES ('legacy-single-user', 'legacy@example.local', 'Legacy User')
+ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id);
+
+SET @seed_user_id := LAST_INSERT_ID();
 
 -- -----------------------------
 -- 1) Demo investments
 -- -----------------------------
 INSERT INTO investments
-(type, symbol, name, country, currency, quantity, avg_buy_price, current_price,
+(user_id, type, symbol, name, country, currency, quantity, avg_buy_price, current_price,
  invested_amount, current_value, previous_value, interest_rate, maturity_date,
  purchase_date, status, notes)
 VALUES
-('STOCK', 'AAPL', 'Apple Inc.', 'US', 'USD', 20.000000, 170.000000, 195.000000,
+(@seed_user_id, 'STOCK', 'AAPL', 'Apple Inc.', 'US', 'USD', 20.000000, 170.000000, 195.000000,
  3400.000000, 3900.000000, 3820.000000, NULL, NULL, '2025-01-10', 'ACTIVE', 'demo-seed-v3'),
-('STOCK', 'MSFT', 'Microsoft Corp.', 'US', 'USD', 12.000000, 330.000000, 420.000000,
+(@seed_user_id, 'STOCK', 'MSFT', 'Microsoft Corp.', 'US', 'USD', 12.000000, 330.000000, 420.000000,
  3960.000000, 5040.000000, 4920.000000, NULL, NULL, '2025-02-02', 'ACTIVE', 'demo-seed-v3'),
-('STOCK', 'NVDA', 'NVIDIA Corp.', 'US', 'USD', 18.000000, 105.000000, 128.000000,
+(@seed_user_id, 'STOCK', 'NVDA', 'NVIDIA Corp.', 'US', 'USD', 18.000000, 105.000000, 128.000000,
  1890.000000, 2304.000000, 2250.000000, NULL, NULL, '2025-03-14', 'ACTIVE', 'demo-seed-v3'),
-('ETF', 'QQQ', 'Invesco QQQ Trust', 'US', 'USD', 14.000000, 380.000000, 460.000000,
+(@seed_user_id, 'ETF', 'QQQ', 'Invesco QQQ Trust', 'US', 'USD', 14.000000, 380.000000, 460.000000,
  5320.000000, 6440.000000, 6360.000000, NULL, NULL, '2024-11-21', 'ACTIVE', 'demo-seed-v3'),
-('ETF', 'VOO', 'Vanguard S&P 500 ETF', 'US', 'USD', 8.000000, 430.000000, 515.000000,
+(@seed_user_id, 'ETF', 'VOO', 'Vanguard S&P 500 ETF', 'US', 'USD', 8.000000, 430.000000, 515.000000,
  3440.000000, 4120.000000, 4050.000000, NULL, NULL, '2024-12-06', 'ACTIVE', 'demo-seed-v3'),
-('STOCK', 'RELIANCE', 'Reliance Industries', 'India', 'INR', 50.000000, 2500.000000, 2980.000000,
+(@seed_user_id, 'STOCK', 'RELIANCE', 'Reliance Industries', 'India', 'INR', 50.000000, 2500.000000, 2980.000000,
  125000.000000, 149000.000000, 147000.000000, NULL, NULL, '2024-09-18', 'ACTIVE', 'demo-seed-v3'),
-('STOCK', 'TCS', 'Tata Consultancy Services', 'India', 'INR', 28.000000, 3450.000000, 4200.000000,
+(@seed_user_id, 'STOCK', 'TCS', 'Tata Consultancy Services', 'India', 'INR', 28.000000, 3450.000000, 4200.000000,
  96600.000000, 117600.000000, 116100.000000, NULL, NULL, '2024-10-08', 'ACTIVE', 'demo-seed-v3'),
-('ETF', 'NIFTYBEES', 'Nippon India ETF Nifty BeES', 'India', 'INR', 280.000000, 235.000000, 275.000000,
+(@seed_user_id, 'ETF', 'NIFTYBEES', 'Nippon India ETF Nifty BeES', 'India', 'INR', 280.000000, 235.000000, 275.000000,
  65800.000000, 77000.000000, 76450.000000, NULL, NULL, '2024-08-02', 'ACTIVE', 'demo-seed-v3'),
-('FD', 'HDFCFD1', 'HDFC 2Y Fixed Deposit', 'India', 'INR', NULL, NULL, NULL,
+(@seed_user_id, 'FD', 'HDFCFD1', 'HDFC 2Y Fixed Deposit', 'India', 'INR', NULL, NULL, NULL,
  500000.000000, 542500.000000, 541000.000000, 8.500, '2027-07-15', '2025-07-15', 'ACTIVE', 'demo-seed-v3'),
-('FD', 'SBIFD1', 'SBI 3Y Fixed Deposit', 'India', 'INR', NULL, NULL, NULL,
+(@seed_user_id, 'FD', 'SBIFD1', 'SBI 3Y Fixed Deposit', 'India', 'INR', NULL, NULL, NULL,
  300000.000000, 336000.000000, 334800.000000, 8.000, '2028-05-01', '2025-05-01', 'ACTIVE', 'demo-seed-v3'),
-('CASH', 'EMERG_CASH', 'Emergency Cash Buffer', 'India', 'INR', NULL, NULL, NULL,
+(@seed_user_id, 'CASH', 'EMERG_CASH', 'Emergency Cash Buffer', 'India', 'INR', NULL, NULL, NULL,
  200000.000000, 200000.000000, 200000.000000, NULL, NULL, '2024-01-01', 'ACTIVE', 'demo-seed-v3'),
-('CASH', 'TRAVEL_FUND', 'Travel Cash Reserve', 'US', 'USD', NULL, NULL, NULL,
+(@seed_user_id, 'CASH', 'TRAVEL_FUND', 'Travel Cash Reserve', 'US', 'USD', NULL, NULL, NULL,
  2500.000000, 2500.000000, 2500.000000, NULL, NULL, '2025-04-01', 'ACTIVE', 'demo-seed-v3'),
-('STOCK', 'BABA', 'Alibaba Group', 'China', 'CNY', 40.000000, 88.000000, 76.000000,
+(@seed_user_id, 'STOCK', 'BABA', 'Alibaba Group', 'China', 'CNY', 40.000000, 88.000000, 76.000000,
  3520.000000, 3040.000000, 3100.000000, NULL, NULL, '2024-06-20', 'CLOSED', 'demo-seed-v3'),
-('ETF', 'SXRV', 'iShares Nasdaq 100 UCITS', 'Europe', 'EUR', 22.000000, 740.000000, 810.000000,
+(@seed_user_id, 'ETF', 'SXRV', 'iShares Nasdaq 100 UCITS', 'Europe', 'EUR', 22.000000, 740.000000, 810.000000,
  16280.000000, 17820.000000, 17690.000000, NULL, NULL, '2024-03-11', 'ACTIVE', 'demo-seed-v3');
 
 -- -----------------------------
 -- 1b) Bulk demo investments (300 rows)
 -- -----------------------------
 INSERT INTO investments
-(type, symbol, name, country, currency, quantity, avg_buy_price, current_price,
+(user_id, type, symbol, name, country, currency, quantity, avg_buy_price, current_price,
  invested_amount, current_value, previous_value, interest_rate, maturity_date,
  purchase_date, status, notes)
 SELECT
+    @seed_user_id AS user_id,
     CASE WHEN s.n % 3 = 0 THEN 'ETF' ELSE 'STOCK' END AS type,
     CONCAT('DINV', LPAD(s.n, 3, '0')) AS symbol,
     CONCAT('Demo Holding ', LPAD(s.n, 3, '0')) AS name,
@@ -92,26 +100,27 @@ WHERE s.n BETWEEN 1 AND 300
     AND NOT EXISTS (
     SELECT 1
     FROM investments i
-    WHERE i.symbol = CONCAT('DINV', LPAD(s.n, 3, '0'))
+    WHERE i.user_id = @seed_user_id
+      AND i.symbol = CONCAT('DINV', LPAD(s.n, 3, '0'))
 );
 
 -- -----------------------------
 -- 2) Resolve IDs for FK inserts
 -- -----------------------------
-SET @inv_aapl      := (SELECT id FROM investments WHERE symbol='AAPL' AND notes='demo-seed-v3' ORDER BY id DESC LIMIT 1);
-SET @inv_msft      := (SELECT id FROM investments WHERE symbol='MSFT' AND notes='demo-seed-v3' ORDER BY id DESC LIMIT 1);
-SET @inv_nvda      := (SELECT id FROM investments WHERE symbol='NVDA' AND notes='demo-seed-v3' ORDER BY id DESC LIMIT 1);
-SET @inv_qqq       := (SELECT id FROM investments WHERE symbol='QQQ' AND notes='demo-seed-v3' ORDER BY id DESC LIMIT 1);
-SET @inv_voo       := (SELECT id FROM investments WHERE symbol='VOO' AND notes='demo-seed-v3' ORDER BY id DESC LIMIT 1);
-SET @inv_reliance  := (SELECT id FROM investments WHERE symbol='RELIANCE' AND notes='demo-seed-v3' ORDER BY id DESC LIMIT 1);
-SET @inv_tcs       := (SELECT id FROM investments WHERE symbol='TCS' AND notes='demo-seed-v3' ORDER BY id DESC LIMIT 1);
-SET @inv_niftybees := (SELECT id FROM investments WHERE symbol='NIFTYBEES' AND notes='demo-seed-v3' ORDER BY id DESC LIMIT 1);
-SET @inv_hdfcfd1   := (SELECT id FROM investments WHERE symbol='HDFCFD1' AND notes='demo-seed-v3' ORDER BY id DESC LIMIT 1);
-SET @inv_sbifd1    := (SELECT id FROM investments WHERE symbol='SBIFD1' AND notes='demo-seed-v3' ORDER BY id DESC LIMIT 1);
-SET @inv_emergcash := (SELECT id FROM investments WHERE symbol='EMERG_CASH' AND notes='demo-seed-v3' ORDER BY id DESC LIMIT 1);
-SET @inv_travelfnd := (SELECT id FROM investments WHERE symbol='TRAVEL_FUND' AND notes='demo-seed-v3' ORDER BY id DESC LIMIT 1);
-SET @inv_baba      := (SELECT id FROM investments WHERE symbol='BABA' AND notes='demo-seed-v3' ORDER BY id DESC LIMIT 1);
-SET @inv_sxrv      := (SELECT id FROM investments WHERE symbol='SXRV' AND notes='demo-seed-v3' ORDER BY id DESC LIMIT 1);
+SET @inv_aapl      := (SELECT id FROM investments WHERE user_id=@seed_user_id AND symbol='AAPL' AND notes='demo-seed-v3' ORDER BY id DESC LIMIT 1);
+SET @inv_msft      := (SELECT id FROM investments WHERE user_id=@seed_user_id AND symbol='MSFT' AND notes='demo-seed-v3' ORDER BY id DESC LIMIT 1);
+SET @inv_nvda      := (SELECT id FROM investments WHERE user_id=@seed_user_id AND symbol='NVDA' AND notes='demo-seed-v3' ORDER BY id DESC LIMIT 1);
+SET @inv_qqq       := (SELECT id FROM investments WHERE user_id=@seed_user_id AND symbol='QQQ' AND notes='demo-seed-v3' ORDER BY id DESC LIMIT 1);
+SET @inv_voo       := (SELECT id FROM investments WHERE user_id=@seed_user_id AND symbol='VOO' AND notes='demo-seed-v3' ORDER BY id DESC LIMIT 1);
+SET @inv_reliance  := (SELECT id FROM investments WHERE user_id=@seed_user_id AND symbol='RELIANCE' AND notes='demo-seed-v3' ORDER BY id DESC LIMIT 1);
+SET @inv_tcs       := (SELECT id FROM investments WHERE user_id=@seed_user_id AND symbol='TCS' AND notes='demo-seed-v3' ORDER BY id DESC LIMIT 1);
+SET @inv_niftybees := (SELECT id FROM investments WHERE user_id=@seed_user_id AND symbol='NIFTYBEES' AND notes='demo-seed-v3' ORDER BY id DESC LIMIT 1);
+SET @inv_hdfcfd1   := (SELECT id FROM investments WHERE user_id=@seed_user_id AND symbol='HDFCFD1' AND notes='demo-seed-v3' ORDER BY id DESC LIMIT 1);
+SET @inv_sbifd1    := (SELECT id FROM investments WHERE user_id=@seed_user_id AND symbol='SBIFD1' AND notes='demo-seed-v3' ORDER BY id DESC LIMIT 1);
+SET @inv_emergcash := (SELECT id FROM investments WHERE user_id=@seed_user_id AND symbol='EMERG_CASH' AND notes='demo-seed-v3' ORDER BY id DESC LIMIT 1);
+SET @inv_travelfnd := (SELECT id FROM investments WHERE user_id=@seed_user_id AND symbol='TRAVEL_FUND' AND notes='demo-seed-v3' ORDER BY id DESC LIMIT 1);
+SET @inv_baba      := (SELECT id FROM investments WHERE user_id=@seed_user_id AND symbol='BABA' AND notes='demo-seed-v3' ORDER BY id DESC LIMIT 1);
+SET @inv_sxrv      := (SELECT id FROM investments WHERE user_id=@seed_user_id AND symbol='SXRV' AND notes='demo-seed-v3' ORDER BY id DESC LIMIT 1);
 
 -- -----------------------------
 -- 3) Demo transactions
@@ -165,8 +174,9 @@ VALUES
 -- 4) Longer chart history for dashboard (120 days)
 -- -----------------------------
 INSERT INTO portfolio_snapshots
-(snapshot_date, total_invested_base, total_value_base, realized_pl_base, unrealized_pl_base)
+(user_id, snapshot_date, total_invested_base, total_value_base, realized_pl_base, unrealized_pl_base)
 SELECT
+    @seed_user_id,
     DATE_SUB(CURDATE(), INTERVAL (119 - s.n) DAY) AS snapshot_date,
     ROUND(2400000 + (s.n * 15500), 6) AS total_invested_base,
     ROUND(2465000 + (s.n * 16120) + ((s.n % 7) * 2200), 6) AS total_value_base,
@@ -187,16 +197,17 @@ WHERE s.n < 120
     AND NOT EXISTS (
     SELECT 1
     FROM portfolio_snapshots ps
-    WHERE ps.snapshot_date = DATE_SUB(CURDATE(), INTERVAL (119 - s.n) DAY)
+    WHERE ps.user_id = @seed_user_id
+      AND ps.snapshot_date = DATE_SUB(CURDATE(), INTERVAL (119 - s.n) DAY)
 );
 
 -- -----------------------------
 -- 5) Extra milestones for better demo narrative
 -- -----------------------------
-INSERT INTO milestones (name, threshold_value_base, comparison_label)
+INSERT INTO milestones (user_id, name, threshold_value_base, comparison_label)
 VALUES
-('International Vacation Milestone', 1500000.00, 'Your portfolio can now fund a premium international vacation!'),
-('Home Down Payment Milestone', 2500000.00, 'Your portfolio value now rivals a strong home down payment.')
+(@seed_user_id, 'International Vacation Milestone', 1500000.00, 'Your portfolio can now fund a premium international vacation!'),
+(@seed_user_id, 'Home Down Payment Milestone', 2500000.00, 'Your portfolio value now rivals a strong home down payment.')
 ON DUPLICATE KEY UPDATE
 name = VALUES(name),
 comparison_label = VALUES(comparison_label);
