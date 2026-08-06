@@ -1,19 +1,48 @@
--- =====================================================================================
--- Demo portfolio data (V4)
--- Purpose: showcase-ready sample dataset for dashboard, holdings, transactions, and trends.
--- Safe for multi-user flow: all user-scoped rows are seeded for a valid app_users record.
--- =====================================================================================
+-- Consolidated seed data from V2 + V4 migrations
+-- Includes the legacy seed user introduced in V3.
 
--- Ensure a deterministic seed user exists and capture its id.
 INSERT INTO app_users (google_subject, email, display_name)
 VALUES ('legacy-single-user', 'legacy@example.local', 'Legacy User')
-ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id);
+ON DUPLICATE KEY UPDATE
+    id = LAST_INSERT_ID(id),
+    email = VALUES(email),
+    display_name = VALUES(display_name);
 
 SET @seed_user_id := LAST_INSERT_ID();
 
--- -----------------------------
--- 1) Demo investments
--- -----------------------------
+-- Base currency for this user.
+INSERT INTO app_settings (user_id, setting_key, setting_value)
+VALUES (@seed_user_id, 'base_currency', 'INR')
+ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value);
+
+-- Starter exchange rates.
+INSERT INTO exchange_rates (user_id, currency_code, rate_to_base)
+VALUES
+    (@seed_user_id, 'INR', 1.00000000),
+    (@seed_user_id, 'USD', 87.00000000),
+    (@seed_user_id, 'GBP', 110.00000000),
+    (@seed_user_id, 'EUR', 95.00000000),
+    (@seed_user_id, 'CNY', 12.00000000)
+ON DUPLICATE KEY UPDATE rate_to_base = VALUES(rate_to_base);
+
+-- Default milestones.
+INSERT INTO milestones (user_id, name, threshold_value_base, comparison_label)
+VALUES
+    (@seed_user_id, 'First Lakh', 100000.00, 'Your first Lakh! A great start to your wealth journey.'),
+    (@seed_user_id, 'Hatchback Milestone', 800000.00, 'Your portfolio is now worth a brand new hatchback car!'),
+    (@seed_user_id, 'Sedan Milestone', 2000000.00, 'Your portfolio could now buy a premium sedan!'),
+    (@seed_user_id, 'Luxury Car Milestone', 5000000.00, 'Your portfolio has crossed the price of a luxury car!'),
+    (@seed_user_id, 'First Crore', 10000000.00, 'You have crossed your first Crore! A huge wealth milestone.')
+ON DUPLICATE KEY UPDATE
+    name = VALUES(name),
+    comparison_label = VALUES(comparison_label);
+
+-- Keep seed deterministic: clear older demo holdings (transactions cascade).
+DELETE FROM investments
+WHERE user_id = @seed_user_id
+  AND notes IN ('demo-seed-v3', 'demo-seed-v3-bulk');
+
+-- Demo investments from V4.
 INSERT INTO investments
 (user_id, type, symbol, name, country, currency, quantity, avg_buy_price, current_price,
  invested_amount, current_value, previous_value, interest_rate, maturity_date,
@@ -48,9 +77,7 @@ VALUES
 (@seed_user_id, 'ETF', 'SXRV', 'iShares Nasdaq 100 UCITS', 'Europe', 'EUR', 22.000000, 740.000000, 810.000000,
  16280.000000, 17820.000000, 17690.000000, NULL, NULL, '2024-03-11', 'ACTIVE', 'demo-seed-v3');
 
--- -----------------------------
--- 1b) Bulk demo investments (300 rows)
--- -----------------------------
+-- Bulk demo investments (300 rows) from V4.
 INSERT INTO investments
 (user_id, type, symbol, name, country, currency, quantity, avg_buy_price, current_price,
  invested_amount, current_value, previous_value, interest_rate, maturity_date,
@@ -97,16 +124,14 @@ FROM (
     ) numbers
 ) s
 WHERE s.n BETWEEN 1 AND 300
-    AND NOT EXISTS (
+  AND NOT EXISTS (
     SELECT 1
     FROM investments i
     WHERE i.user_id = @seed_user_id
       AND i.symbol = CONCAT('DINV', LPAD(s.n, 3, '0'))
 );
 
--- -----------------------------
--- 2) Resolve IDs for FK inserts
--- -----------------------------
+-- Resolve IDs for transaction FK inserts.
 SET @inv_aapl      := (SELECT id FROM investments WHERE user_id=@seed_user_id AND symbol='AAPL' AND notes='demo-seed-v3' ORDER BY id DESC LIMIT 1);
 SET @inv_msft      := (SELECT id FROM investments WHERE user_id=@seed_user_id AND symbol='MSFT' AND notes='demo-seed-v3' ORDER BY id DESC LIMIT 1);
 SET @inv_nvda      := (SELECT id FROM investments WHERE user_id=@seed_user_id AND symbol='NVDA' AND notes='demo-seed-v3' ORDER BY id DESC LIMIT 1);
@@ -122,57 +147,40 @@ SET @inv_travelfnd := (SELECT id FROM investments WHERE user_id=@seed_user_id AN
 SET @inv_baba      := (SELECT id FROM investments WHERE user_id=@seed_user_id AND symbol='BABA' AND notes='demo-seed-v3' ORDER BY id DESC LIMIT 1);
 SET @inv_sxrv      := (SELECT id FROM investments WHERE user_id=@seed_user_id AND symbol='SXRV' AND notes='demo-seed-v3' ORDER BY id DESC LIMIT 1);
 
--- -----------------------------
--- 3) Demo transactions
--- -----------------------------
+-- Demo transactions from V4.
 INSERT INTO transactions
 (investment_id, type, quantity, price, amount, realized_pl, currency, transaction_date, notes)
 VALUES
 (@inv_aapl, 'BUY',   15.000000, 160.000000, 2400.000000, NULL,      'USD', '2025-01-10', 'demo-seed-v3'),
 (@inv_aapl, 'BUY',    5.000000, 200.000000, 1000.000000, NULL,      'USD', '2025-03-10', 'demo-seed-v3'),
-
 (@inv_msft, 'BUY',   12.000000, 330.000000, 3960.000000, NULL,      'USD', '2025-02-02', 'demo-seed-v3'),
-
 (@inv_nvda, 'BUY',   10.000000,  90.000000,  900.000000, NULL,      'USD', '2025-03-14', 'demo-seed-v3'),
 (@inv_nvda, 'BUY',    8.000000, 123.750000,  990.000000, NULL,      'USD', '2025-04-14', 'demo-seed-v3'),
-
 (@inv_qqq,  'BUY',    9.000000, 360.000000, 3240.000000, NULL,      'USD', '2024-11-21', 'demo-seed-v3'),
 (@inv_qqq,  'BUY',    5.000000, 416.000000, 2080.000000, NULL,      'USD', '2025-02-12', 'demo-seed-v3'),
-
 (@inv_voo,  'BUY',    8.000000, 430.000000, 3440.000000, NULL,      'USD', '2024-12-06', 'demo-seed-v3'),
-
 (@inv_reliance, 'BUY', 30.000000, 2300.000000, 69000.000000, NULL,  'INR', '2024-09-18', 'demo-seed-v3'),
 (@inv_reliance, 'BUY', 20.000000, 2800.000000, 56000.000000, NULL,  'INR', '2024-11-04', 'demo-seed-v3'),
-
 (@inv_tcs,  'BUY',   18.000000, 3200.000000, 57600.000000, NULL,    'INR', '2024-10-08', 'demo-seed-v3'),
 (@inv_tcs,  'BUY',   10.000000, 3900.000000, 39000.000000, NULL,    'INR', '2025-01-22', 'demo-seed-v3'),
-
 (@inv_niftybees, 'BUY', 200.000000, 220.000000, 44000.000000, NULL, 'INR', '2024-08-02', 'demo-seed-v3'),
 (@inv_niftybees, 'BUY',  80.000000, 272.500000, 21800.000000, NULL, 'INR', '2025-02-15', 'demo-seed-v3'),
-
 (@inv_hdfcfd1, 'DEPOSIT', NULL, NULL, 500000.000000, NULL,          'INR', '2025-07-15', 'demo-seed-v3'),
 (@inv_hdfcfd1, 'INTEREST', NULL, NULL, 21250.000000, NULL,          'INR', '2026-01-15', 'demo-seed-v3'),
 (@inv_hdfcfd1, 'INTEREST', NULL, NULL, 21250.000000, NULL,          'INR', '2026-07-15', 'demo-seed-v3'),
-
 (@inv_sbifd1, 'DEPOSIT', NULL, NULL, 300000.000000, NULL,           'INR', '2025-05-01', 'demo-seed-v3'),
 (@inv_sbifd1, 'INTEREST', NULL, NULL, 12000.000000, NULL,           'INR', '2025-11-01', 'demo-seed-v3'),
 (@inv_sbifd1, 'INTEREST', NULL, NULL, 12000.000000, NULL,           'INR', '2026-05-01', 'demo-seed-v3'),
-
 (@inv_emergcash, 'DEPOSIT', NULL, NULL, 200000.000000, NULL,        'INR', '2024-01-01', 'demo-seed-v3'),
-
 (@inv_travelfnd, 'DEPOSIT', NULL, NULL, 1500.000000, NULL,          'USD', '2025-04-01', 'demo-seed-v3'),
 (@inv_travelfnd, 'DEPOSIT', NULL, NULL, 1200.000000, NULL,          'USD', '2025-05-01', 'demo-seed-v3'),
 (@inv_travelfnd, 'WITHDRAW', NULL, NULL, 200.000000, NULL,          'USD', '2025-06-12', 'demo-seed-v3'),
-
 (@inv_baba, 'BUY',   40.000000, 88.000000, 3520.000000, NULL,       'CNY', '2024-06-20', 'demo-seed-v3'),
 (@inv_baba, 'SELL',  40.000000, 76.000000, 3040.000000, -480.000000,'CNY', '2025-02-10', 'demo-seed-v3'),
-
 (@inv_sxrv, 'BUY',   14.000000, 700.000000, 9800.000000, NULL,      'EUR', '2024-03-11', 'demo-seed-v3'),
 (@inv_sxrv, 'BUY',    8.000000, 810.000000, 6480.000000, NULL,      'EUR', '2025-03-21', 'demo-seed-v3');
 
--- -----------------------------
--- 4) Longer chart history for dashboard (120 days)
--- -----------------------------
+-- Longer chart history for dashboard (120 days) from V4.
 INSERT INTO portfolio_snapshots
 (user_id, snapshot_date, total_invested_base, total_value_base, realized_pl_base, unrealized_pl_base)
 SELECT
@@ -194,20 +202,18 @@ FROM (
     ) o
 ) s
 WHERE s.n < 120
-    AND NOT EXISTS (
+  AND NOT EXISTS (
     SELECT 1
     FROM portfolio_snapshots ps
     WHERE ps.user_id = @seed_user_id
       AND ps.snapshot_date = DATE_SUB(CURDATE(), INTERVAL (119 - s.n) DAY)
 );
 
--- -----------------------------
--- 5) Extra milestones for better demo narrative
--- -----------------------------
+-- Extra milestones from V4.
 INSERT INTO milestones (user_id, name, threshold_value_base, comparison_label)
 VALUES
 (@seed_user_id, 'International Vacation Milestone', 1500000.00, 'Your portfolio can now fund a premium international vacation!'),
 (@seed_user_id, 'Home Down Payment Milestone', 2500000.00, 'Your portfolio value now rivals a strong home down payment.')
 ON DUPLICATE KEY UPDATE
-name = VALUES(name),
-comparison_label = VALUES(comparison_label);
+    name = VALUES(name),
+    comparison_label = VALUES(comparison_label);
