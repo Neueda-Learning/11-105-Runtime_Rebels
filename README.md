@@ -33,6 +33,7 @@ without reworking existing pieces.
 13. [Mock/Test Data](#mocktest-data)
 14. [Design Decisions & Trade-offs](#design-decisions--trade-offs)
 15. [Roadmap / Future Iterations](#roadmap--future-iterations)
+16. [User Stories](#user-stories)
 
 ---
 
@@ -882,3 +883,10 @@ comes in — not built now, to avoid over-engineering ahead of validated need:
 - Rate history (instead of a single current FX rate) for more accurate historical
   realized P/L conversion
 - Notifications when a milestone is achieved
+
+---
+
+## User Stories
+
+- Main user stories folder: [docs/user-stories/](docs/user-stories/)
+- Alternate copy: [docs/user-stories.md](docs/user-stories.md)
