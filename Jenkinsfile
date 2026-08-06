@@ -83,8 +83,10 @@ pipeline {
                     set +a
 
                     docker ps
-                    docker exec portfolio-manager-mysql mysql -u"$DB_USERNAME" -p"$DB_PASSWORD" -D "$DB_NAME" -e "SELECT installed_rank,version,description,script,success FROM flyway_schema_history ORDER BY installed_rank;"
-                    docker exec portfolio-manager-mysql mysql -u"$DB_USERNAME" -p"$DB_PASSWORD" -D "$DB_NAME" -e "SELECT COUNT(*) AS investments_count FROM investments; SELECT COUNT(*) AS transactions_count FROM transactions;"
+
+                    # Verify schema/data initialization (schema.sql + data.sql), not Flyway history.
+                    docker exec -e MYSQL_PWD="$DB_PASSWORD" portfolio-manager-mysql mysql -u"$DB_USERNAME" -D "$DB_NAME" -e "SHOW TABLES LIKE 'app_users'; SHOW TABLES LIKE 'investments'; SHOW TABLES LIKE 'transactions';"
+                    docker exec -e MYSQL_PWD="$DB_PASSWORD" portfolio-manager-mysql mysql -u"$DB_USERNAME" -D "$DB_NAME" -e "SELECT COUNT(*) AS app_users_count FROM app_users; SELECT COUNT(*) AS investments_count FROM investments; SELECT COUNT(*) AS transactions_count FROM transactions;"
                 '''
             }
         }
