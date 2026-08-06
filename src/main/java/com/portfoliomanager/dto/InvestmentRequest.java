@@ -1,6 +1,7 @@
 package com.portfoliomanager.dto;
 
 import com.portfoliomanager.model.InvestmentType;
+import com.portfoliomanager.model.CommodityType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -15,6 +16,7 @@ import java.time.LocalDate;
  *  - STOCK / ETF: quantity, avgBuyPrice, currentPrice
  *  - FD:          investedAmount (principal), currentValue, interestRate, maturityDate
  *  - CASH:        investedAmount, currentValue (usually equal)
+ *  - COMMODITY:   quantity, avgBuyPrice, currentPrice, market, commodityType, purchaseDate
  */
 @Data
 public class InvestmentRequest {
@@ -52,5 +54,7 @@ public class InvestmentRequest {
     private BigDecimal interestRate;
     private LocalDate maturityDate;
     private LocalDate purchaseDate;
+    private CommodityType commodityType;
+    private String market;
     private String notes;
 }

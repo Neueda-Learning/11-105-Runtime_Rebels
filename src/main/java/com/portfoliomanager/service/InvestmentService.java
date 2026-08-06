@@ -8,7 +8,9 @@ import com.portfoliomanager.exception.ResourceNotFoundException;
 import com.portfoliomanager.model.Investment;
 import com.portfoliomanager.model.InvestmentStatus;
 import com.portfoliomanager.model.InvestmentType;
+import com.portfoliomanager.model.Commodity;
 import com.portfoliomanager.repository.InvestmentRepository;
+import com.portfoliomanager.repository.CommodityRepository;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -20,10 +22,14 @@ public class InvestmentService {
 
     private final InvestmentRepository investmentRepository;
     private final CurrencyService currencyService;
+    private final CommodityRepository commodityRepository;
 
-    public InvestmentService(InvestmentRepository investmentRepository, CurrencyService currencyService) {
+    public InvestmentService(InvestmentRepository investmentRepository,
+                             CurrencyService currencyService,
+                             CommodityRepository commodityRepository) {
         this.investmentRepository = investmentRepository;
         this.currencyService = currencyService;
+        this.commodityRepository = commodityRepository;
     }
 
     public List<InvestmentResponse> findAll(InvestmentType type, String country, InvestmentStatus status) {
@@ -51,7 +57,7 @@ public class InvestmentService {
         BigDecimal investedAmount;
         BigDecimal currentValue;
 
-        if (request.getType() == InvestmentType.STOCK || request.getType() == InvestmentType.ETF) {
+        if (isTradeableType(request.getType())) {
             investedAmount = quantity.multiply(avgBuyPrice);
             currentValue = quantity.multiply(currentPrice != null ? currentPrice : avgBuyPrice);
             if (currentPrice == null) {
@@ -69,6 +75,8 @@ public class InvestmentService {
                 .name(request.getName())
                 .country(request.getCountry())
                 .currency(request.getCurrency().toUpperCase())
+                .market(request.getMarket())
+                .commodityType(request.getCommodityType())
                 .quantity(quantity)
                 .avgBuyPrice(avgBuyPrice)
                 .currentPrice(currentPrice)
@@ -82,27 +90,39 @@ public class InvestmentService {
                 .notes(request.getNotes())
                 .build();
 
-        return toResponse(investmentRepository.save(investment));
+        Investment saved = investmentRepository.save(investment);
+        syncCommodityDetails(saved, request);
+        return toResponse(investmentRepository.findById(saved.getId()).orElse(saved));
     }
 
     public InvestmentResponse update(Long id, InvestmentRequest request) {
         validateForType(request);
         Investment existing = getOrThrow(id);
 
+        existing.setSymbol(request.getSymbol());
         existing.setName(request.getName());
         existing.setCountry(request.getCountry());
         existing.setCurrency(request.getCurrency().toUpperCase());
+        existing.setMarket(request.getMarket());
+        existing.setCommodityType(request.getCommodityType());
         existing.setNotes(request.getNotes());
         existing.setMaturityDate(request.getMaturityDate());
         existing.setInterestRate(request.getInterestRate());
         if (request.getPurchaseDate() != null) {
             existing.setPurchaseDate(request.getPurchaseDate());
         }
-        // NOTE: quantity/avgBuyPrice/currentValue are intentionally NOT changed here -
-        // they are only ever changed via transactions (buy/sell/deposit/etc.) or the
-        // dedicated price-refresh endpoint, so the audit trail always stays consistent.
+        if (existing.getType() == InvestmentType.COMMODITY) {
+            existing.setQuantity(request.getQuantity());
+            existing.setAvgBuyPrice(request.getAvgBuyPrice());
+            existing.setCurrentPrice(request.getCurrentPrice() != null ? request.getCurrentPrice() : request.getAvgBuyPrice());
+            existing.setInvestedAmount(existing.getQuantity().multiply(existing.getAvgBuyPrice()));
+            existing.setCurrentValue(existing.getQuantity().multiply(existing.getCurrentPrice()));
+            existing.setPreviousValue(existing.getCurrentValue());
+        }
 
-        return toResponse(investmentRepository.update(existing));
+        Investment updated = investmentRepository.update(existing);
+        syncCommodityDetails(updated, request);
+        return toResponse(investmentRepository.findById(updated.getId()).orElse(updated));
     }
 
     public InvestmentResponse updatePrice(Long id, PriceUpdateRequest request) {
@@ -111,9 +131,9 @@ public class InvestmentService {
         BigDecimal newCurrentPrice = investment.getCurrentPrice();
         BigDecimal newCurrentValue;
 
-        if (investment.getType() == InvestmentType.STOCK || investment.getType() == InvestmentType.ETF) {
+        if (isTradeableType(investment.getType())) {
             if (request.getCurrentPrice() == null) {
-                throw new InvalidOperationException("currentPrice is required for STOCK/ETF price updates");
+                throw new InvalidOperationException("currentPrice is required for STOCK/ETF/COMMODITY price updates");
             }
             newCurrentPrice = request.getCurrentPrice();
             newCurrentValue = investment.getQuantity().multiply(newCurrentPrice);
@@ -136,9 +156,17 @@ public class InvestmentService {
     }
 
     private void validateForType(InvestmentRequest request) {
-        if (request.getType() == InvestmentType.STOCK || request.getType() == InvestmentType.ETF) {
+        if (isTradeableType(request.getType())) {
             if (request.getQuantity() == null || request.getAvgBuyPrice() == null) {
-                throw new InvalidOperationException("quantity and avgBuyPrice are required for STOCK/ETF investments");
+                throw new InvalidOperationException("quantity and avgBuyPrice are required for STOCK/ETF/COMMODITY investments");
+            }
+            if (request.getType() == InvestmentType.COMMODITY) {
+                if (request.getCommodityType() == null || request.getMarket() == null || request.getMarket().isBlank()) {
+                    throw new InvalidOperationException("commodityType and market are required for COMMODITY investments");
+                }
+                if (request.getPurchaseDate() == null) {
+                    throw new InvalidOperationException("purchaseDate is required for COMMODITY investments");
+                }
             }
         } else {
             if (request.getInvestedAmount() == null) {
@@ -161,6 +189,8 @@ public class InvestmentService {
                 .name(inv.getName())
                 .country(inv.getCountry())
                 .currency(inv.getCurrency())
+                .market(inv.getMarket())
+                .commodityType(inv.getCommodityType())
                 .quantity(inv.getQuantity())
                 .avgBuyPrice(inv.getAvgBuyPrice())
                 .currentPrice(inv.getCurrentPrice())
@@ -179,6 +209,31 @@ public class InvestmentService {
                 .createdAt(inv.getCreatedAt())
                 .updatedAt(inv.getUpdatedAt())
                 .build();
+    }
+
+    private boolean isTradeableType(InvestmentType type) {
+        return type == InvestmentType.STOCK || type == InvestmentType.ETF || type == InvestmentType.COMMODITY;
+    }
+
+    private void syncCommodityDetails(Investment investment, InvestmentRequest request) {
+        if (investment.getType() != InvestmentType.COMMODITY) {
+            return;
+        }
+
+        Commodity commodity = Commodity.builder()
+                .investmentId(investment.getId())
+                .commodityName(investment.getName())
+                .commodityType(request.getCommodityType())
+                .marketExchange(request.getMarket())
+                .country(investment.getCountry())
+                .currency(investment.getCurrency())
+                .quantity(investment.getQuantity())
+                .purchasePrice(investment.getAvgBuyPrice())
+                .currentPrice(investment.getCurrentPrice())
+                .purchaseDate(investment.getPurchaseDate())
+                .build();
+
+        commodityRepository.upsertByInvestmentId(commodity);
     }
 
     static BigDecimal percentChange(BigDecimal base, BigDecimal change) {

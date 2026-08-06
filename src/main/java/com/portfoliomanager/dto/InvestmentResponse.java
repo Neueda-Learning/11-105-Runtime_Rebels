@@ -2,6 +2,7 @@ package com.portfoliomanager.dto;
 
 import com.portfoliomanager.model.InvestmentStatus;
 import com.portfoliomanager.model.InvestmentType;
+import com.portfoliomanager.model.CommodityType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,6 +23,8 @@ public class InvestmentResponse {
     private String name;
     private String country;
     private String currency;
+    private String market;
+    private CommodityType commodityType;
 
     private BigDecimal quantity;
     private BigDecimal avgBuyPrice;

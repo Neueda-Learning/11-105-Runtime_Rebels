@@ -33,10 +33,17 @@ public class InvestmentController {
     @Operation(summary = "List investments, optionally filtered by type, country and status")
     @GetMapping
     public List<InvestmentResponse> findAll(
-            @RequestParam(required = false) InvestmentType type,
+            @RequestParam(required = false) String type,
             @RequestParam(required = false) String country,
             @RequestParam(required = false) InvestmentStatus status) {
-        return investmentService.findAll(type, country, status);
+        return investmentService.findAll(parseType(type), country, status);
+    }
+
+    private InvestmentType parseType(String type) {
+        if (type == null || type.isBlank()) {
+            return null;
+        }
+        return InvestmentType.from(type);
     }
 
     @Operation(summary = "Get a single investment by id")

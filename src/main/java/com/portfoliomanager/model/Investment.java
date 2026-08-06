@@ -46,6 +46,10 @@ public class Investment {
     @Size(min = 3, max = 3, message = "Currency must be a 3-letter ISO code")
     private String currency;
 
+    // Applicable to COMMODITY
+    private String market;
+    private CommodityType commodityType;
+
     // Applicable mainly to STOCK / ETF
     @DecimalMin(value = "0.0", inclusive = false, message = "Quantity must be greater than 0")
     private BigDecimal quantity;
