@@ -50,7 +50,7 @@ springdoc:
 # Application specific configuration
 portfolio:
   base-currency: ${BASE_CURRENCY:INR}
-  frontend-origin: ${FRONTEND_ORIGIN:http://localhost:5173}
+  frontend-origin: ${FRONTEND_ORIGIN:*}
   snapshot:
     cron: ${SNAPSHOT_CRON:0 5 0 * * *}   # every day just after midnight - records daily wealth snapshot
 
