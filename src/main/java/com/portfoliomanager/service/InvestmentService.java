@@ -83,10 +83,10 @@ public class InvestmentService {
 
         Investment investment = Investment.builder()
                 .type(request.getType())
-            .symbol(normalizedSymbol)
+                .symbol(normalizedSymbol)
                 .name(request.getName())
                 .country(request.getCountry())
-            .currency(normalizedCurrency)
+                .currency(normalizedCurrency)
                 .quantity(quantity)
                 .avgBuyPrice(avgBuyPrice)
                 .currentPrice(currentPrice)

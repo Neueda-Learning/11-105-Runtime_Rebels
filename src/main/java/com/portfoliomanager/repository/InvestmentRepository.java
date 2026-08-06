@@ -57,23 +57,23 @@ public class InvestmentRepository {
         return results.stream().findFirst();
     }
 
-        public Optional<Investment> findActiveBySymbolAndType(Long userId, String symbol, InvestmentType type) {
+    public Optional<Investment> findActiveBySymbolAndType(Long userId, String symbol, InvestmentType type) {
         List<Investment> results = jdbcTemplate.query(
-            """
-                SELECT *
-                FROM investments
-                WHERE user_id = ?
-                  AND status = 'ACTIVE'
-                  AND type = ?
-                  AND UPPER(TRIM(symbol)) = ?
-                ORDER BY updated_at DESC, id DESC
-                """,
-            rowMapper,
-            userId,
-            type.name(),
-            symbol.trim().toUpperCase());
+                """
+                        SELECT *
+                        FROM investments
+                        WHERE user_id = ?
+                          AND status = 'ACTIVE'
+                          AND type = ?
+                          AND UPPER(TRIM(symbol)) = ?
+                        ORDER BY updated_at DESC, id DESC
+                        """,
+                rowMapper,
+                userId,
+                type.name(),
+                symbol.trim().toUpperCase());
         return results.stream().findFirst();
-        }
+    }
 
     public Investment save(Long userId, Investment inv) {
         String sql = """
