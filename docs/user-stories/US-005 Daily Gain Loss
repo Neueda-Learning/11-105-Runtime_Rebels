@@ -1,1 +1,8 @@
 
+User story:
+As a customer, I want daily gain/loss and trend history, so that I can track portfolio movement over time.
+
+Acceptance criteria:
+- Given snapshots exist, when I open dashboard, then today gain/loss amount and percent are shown.
+- Given a date range, when I request performance history, then daily chart points are returned.
+- Given today snapshot is missing, when scheduler or manual trigger runs, then today snapshot is created.
