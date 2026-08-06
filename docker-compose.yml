@@ -32,6 +32,8 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       SERVER_PORT: 8080
       BASE_CURRENCY: ${BASE_CURRENCY:-INR}
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:8085}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-228581062060-5ldjfi0mv630si31duugdec84amo4g69.apps.googleusercontent.com}
     ports:
       - "${APP_PORT:-8083}:8080"
     depends_on:
@@ -50,6 +52,7 @@ services:
       - "${FRONTEND_PORT:-8085}:5173"
     environment:
       - VITE_PROXY_TARGET=http://app:8080
+      - VITE_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-228581062060-5ldjfi0mv630si31duugdec84amo4g69.apps.googleusercontent.com}
     depends_on:
       - app
     networks:

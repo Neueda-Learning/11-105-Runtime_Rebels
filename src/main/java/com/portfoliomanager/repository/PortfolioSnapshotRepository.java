@@ -18,35 +18,35 @@ public class PortfolioSnapshotRepository {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    public List<PortfolioSnapshot> findBetween(LocalDate from, LocalDate to) {
+    public List<PortfolioSnapshot> findBetween(Long userId, LocalDate from, LocalDate to) {
         return jdbcTemplate.query(
-                "SELECT * FROM portfolio_snapshots WHERE snapshot_date BETWEEN ? AND ? ORDER BY snapshot_date ASC",
-                rowMapper, from, to);
+                "SELECT * FROM portfolio_snapshots WHERE user_id = ? AND snapshot_date BETWEEN ? AND ? ORDER BY snapshot_date ASC",
+                rowMapper, userId, from, to);
     }
 
-    public List<PortfolioSnapshot> findAll() {
+    public List<PortfolioSnapshot> findAll(Long userId) {
         return jdbcTemplate.query(
-                "SELECT * FROM portfolio_snapshots ORDER BY snapshot_date ASC", rowMapper);
+                "SELECT * FROM portfolio_snapshots WHERE user_id = ? ORDER BY snapshot_date ASC", rowMapper, userId);
     }
 
     /** Insert today's snapshot, or update it if one already exists for the date (idempotent). */
-    public void upsert(PortfolioSnapshot s) {
+    public void upsert(Long userId, PortfolioSnapshot s) {
         int updated = jdbcTemplate.update(
                 """
                 UPDATE portfolio_snapshots SET total_invested_base = ?, total_value_base = ?,
-                    realized_pl_base = ?, unrealized_pl_base = ? WHERE snapshot_date = ?
+                    realized_pl_base = ?, unrealized_pl_base = ? WHERE user_id = ? AND snapshot_date = ?
                 """,
                 s.getTotalInvestedBase(), s.getTotalValueBase(), s.getRealizedPlBase(),
-                s.getUnrealizedPlBase(), s.getSnapshotDate());
+                s.getUnrealizedPlBase(), userId, s.getSnapshotDate());
 
         if (updated == 0) {
             jdbcTemplate.update(
                     """
                     INSERT INTO portfolio_snapshots
-                        (snapshot_date, total_invested_base, total_value_base, realized_pl_base, unrealized_pl_base)
-                    VALUES (?,?,?,?,?)
+                        (user_id, snapshot_date, total_invested_base, total_value_base, realized_pl_base, unrealized_pl_base)
+                    VALUES (?,?,?,?,?,?)
                     """,
-                    s.getSnapshotDate(), s.getTotalInvestedBase(), s.getTotalValueBase(),
+                    userId, s.getSnapshotDate(), s.getTotalInvestedBase(), s.getTotalValueBase(),
                     s.getRealizedPlBase(), s.getUnrealizedPlBase());
         }
     }

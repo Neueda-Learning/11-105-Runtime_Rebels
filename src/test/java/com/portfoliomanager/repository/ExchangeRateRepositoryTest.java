@@ -45,7 +45,7 @@ class ExchangeRateRepositoryTest {
         insertRate("EUR", "90.55000000");
         insertRate("AUD", "54.32000000");
 
-        List<ExchangeRate> all = repository.findAll();
+        List<ExchangeRate> all = repository.findAll(null);
 
         assertEquals(3, all.size());
         assertEquals("AUD", all.get(0).getCurrencyCode());
@@ -57,16 +57,16 @@ class ExchangeRateRepositoryTest {
     void findByCurrencyCode_returnsExistingAndEmptyForMissing() {
         insertRate("USD", "83.12000000");
 
-        ExchangeRate existing = repository.findByCurrencyCode("USD").orElseThrow();
+        ExchangeRate existing = repository.findByCurrencyCode(1L,"USD").orElseThrow();
 
         assertEquals("USD", existing.getCurrencyCode());
         assertEquals(0, new BigDecimal("83.12000000").compareTo(existing.getRateToBase()));
-        assertTrue(repository.findByCurrencyCode("JPY").isEmpty());
+        assertTrue(repository.findByCurrencyCode(1L,"JPY").isEmpty());
     }
 
     @Test
     void upsert_insertsWhenCurrencyDoesNotExist() {
-        ExchangeRate saved = repository.upsert("GBP", new BigDecimal("104.55000000"));
+        ExchangeRate saved = repository.upsert(1L, "GBP", new BigDecimal("104.55000000"));
 
         assertEquals("GBP", saved.getCurrencyCode());
         assertEquals(0, new BigDecimal("104.55000000").compareTo(saved.getRateToBase()));
@@ -77,7 +77,7 @@ class ExchangeRateRepositoryTest {
     void upsert_updatesWhenCurrencyExists() {
         insertRate("USD", "83.12000000");
 
-        ExchangeRate updated = repository.upsert("USD", new BigDecimal("84.22000000"));
+        ExchangeRate updated = repository.upsert(1L, "USD", new BigDecimal("84.22000000"));
 
         assertEquals("USD", updated.getCurrencyCode());
         assertEquals(0, new BigDecimal("84.22000000").compareTo(updated.getRateToBase()));

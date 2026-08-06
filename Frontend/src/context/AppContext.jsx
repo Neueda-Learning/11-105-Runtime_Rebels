@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { CheckCircle2, AlertCircle, X } from 'lucide-react'
-import { getBaseCurrency } from '../api/client'
+import { getAuthToken, getBaseCurrency, getCurrentUser, setAuthToken } from '../api/client'
 
 const AppCtx = createContext(null)
 const VALID_THEMES = new Set(['light', 'dark', 'system'])
@@ -49,24 +49,72 @@ export function AppProvider({ children }) {
   const theme = useProvideTheme()
   const toasts = useProvideToasts()
   const [baseCurrency, setBaseCurrencyState] = useState('INR')
+  const [user, setUser] = useState(null)
+  const [authReady, setAuthReady] = useState(false)
+
+  const signOut = useCallback(() => {
+    setAuthToken(null)
+    setUser(null)
+    setBaseCurrencyState('INR')
+    window.google?.accounts?.id?.disableAutoSelect?.()
+  }, [])
+
+  const bootstrapAuth = useCallback(async () => {
+    const token = getAuthToken()
+    if (!token) {
+      setUser(null)
+      setAuthReady(true)
+      return
+    }
+
+    try {
+      const profile = await getCurrentUser()
+      setUser(profile)
+    } catch (error) {
+      signOut()
+    } finally {
+      setAuthReady(true)
+    }
+  }, [signOut])
+
+  const signInWithGoogleToken = useCallback(
+    async (token) => {
+      setAuthToken(token)
+      const profile = await getCurrentUser()
+      setUser(profile)
+      return profile
+    },
+    []
+  )
 
   useEffect(() => {
-  getBaseCurrency()
-    .then((res) => {
-      const code = res?.baseCurrency || res?.currencyCode || res?.currency || res?.code
-      if (code) setBaseCurrencyState(code)
-    })
-    .catch(() => {})
-}, [])
+    bootstrapAuth()
+  }, [bootstrapAuth])
+
+  useEffect(() => {
+    if (!user) return
+
+    getBaseCurrency()
+      .then((res) => {
+        const code = res?.baseCurrency || res?.currencyCode || res?.currency || res?.code
+        if (code) setBaseCurrencyState(code)
+      })
+      .catch(() => {})
+  }, [user])
 
   const value = useMemo(
     () => ({
       ...theme,
       ...toasts,
+      user,
+      authReady,
+      isAuthenticated: Boolean(user),
+      signInWithGoogleToken,
+      signOut,
       baseCurrency,
       setBaseCurrency: setBaseCurrencyState,
     }),
-    [theme, toasts, baseCurrency]
+    [theme, toasts, user, authReady, signInWithGoogleToken, signOut, baseCurrency]
   )
 
   return (

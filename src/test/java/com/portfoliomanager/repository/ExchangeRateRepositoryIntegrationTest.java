@@ -40,7 +40,7 @@ class ExchangeRateRepositoryIntegrationTest {
 
     @Test
     void upsert_insertsWhenCurrencyDoesNotExist() {
-        ExchangeRate saved = exchangeRateRepository.upsert("USD", new BigDecimal("83.12000000"));
+        ExchangeRate saved = exchangeRateRepository.upsert(1L, "USD", new BigDecimal("83.12000000"));
 
         assertEquals("USD", saved.getCurrencyCode());
         assertEquals(new BigDecimal("83.12000000"), saved.getRateToBase());
@@ -54,7 +54,7 @@ class ExchangeRateRepositoryIntegrationTest {
         jdbcTemplate.update("INSERT INTO exchange_rates(currency_code, rate_to_base, updated_at) VALUES (?,?,?)",
                 "USD", new BigDecimal("80.00000000"), java.sql.Timestamp.valueOf("2026-08-01 00:00:00"));
 
-        ExchangeRate updated = exchangeRateRepository.upsert("USD", new BigDecimal("81.50000000"));
+        ExchangeRate updated = exchangeRateRepository.upsert(1L, "USD", new BigDecimal("81.50000000"));
 
         assertEquals("USD", updated.getCurrencyCode());
         assertEquals(new BigDecimal("81.50000000"), updated.getRateToBase());
@@ -70,8 +70,8 @@ class ExchangeRateRepositoryIntegrationTest {
         jdbcTemplate.update("INSERT INTO exchange_rates(currency_code, rate_to_base, updated_at) VALUES (?,?,?)",
                 "EUR", new BigDecimal("90.00000000"), java.sql.Timestamp.valueOf("2026-08-01 00:00:00"));
 
-        Optional<ExchangeRate> eur = exchangeRateRepository.findByCurrencyCode("EUR");
-        List<ExchangeRate> all = exchangeRateRepository.findAll();
+        Optional<ExchangeRate> eur = exchangeRateRepository.findByCurrencyCode(1L, "EUR");
+        List<ExchangeRate> all = exchangeRateRepository.findAll(1L);
 
         assertTrue(eur.isPresent());
         assertEquals(new BigDecimal("90.00000000"), eur.get().getRateToBase());

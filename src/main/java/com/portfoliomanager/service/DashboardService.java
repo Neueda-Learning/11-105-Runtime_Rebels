@@ -27,20 +27,24 @@ public class DashboardService {
     private final TransactionRepository transactionRepository;
     private final CurrencyService currencyService;
     private final MilestoneService milestoneService;
+    private final CurrentUserService currentUserService;
 
     public DashboardService(InvestmentRepository investmentRepository,
                              TransactionRepository transactionRepository,
                              CurrencyService currencyService,
-                             MilestoneService milestoneService) {
+                             MilestoneService milestoneService,
+                             CurrentUserService currentUserService) {
         this.investmentRepository = investmentRepository;
         this.transactionRepository = transactionRepository;
         this.currencyService = currencyService;
         this.milestoneService = milestoneService;
+        this.currentUserService = currentUserService;
     }
 
     public DashboardResponse getDashboard() {
+        Long userId = currentUserService.getCurrentUserId();
         String baseCurrency = currencyService.getBaseCurrency();
-        List<Investment> activeInvestments = investmentRepository.findAllActive();
+        List<Investment> activeInvestments = investmentRepository.findAllActive(userId);
 
         BigDecimal totalInvested = BigDecimal.ZERO;
         BigDecimal totalCurrentValue = BigDecimal.ZERO;
@@ -53,7 +57,7 @@ public class DashboardService {
             totalPreviousValue = totalPreviousValue.add(currencyService.toBase(prev, inv.getCurrency()));
         }
 
-        BigDecimal realizedPl = calculateRealizedPl();
+        BigDecimal realizedPl = calculateRealizedPl(userId);
         BigDecimal unrealizedPl = totalCurrentValue.subtract(totalInvested);
         BigDecimal overallPl = unrealizedPl.add(realizedPl);
         BigDecimal overallPlPercent = percentOf(totalInvested, overallPl);
@@ -81,8 +85,8 @@ public class DashboardService {
                 .build();
     }
 
-    private BigDecimal calculateRealizedPl() {
-        List<Transaction> sells = transactionRepository.findAllRealizedPlTransactions();
+    private BigDecimal calculateRealizedPl(Long userId) {
+        List<Transaction> sells = transactionRepository.findAllRealizedPlTransactions(userId);
         BigDecimal total = BigDecimal.ZERO;
         for (Transaction tx : sells) {
             if (tx.getRealizedPl() != null) {

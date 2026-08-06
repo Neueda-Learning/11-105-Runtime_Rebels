@@ -16,18 +16,23 @@ public class CurrencyService {
 
     private final ExchangeRateRepository exchangeRateRepository;
     private final SettingRepository settingRepository;
+    private final CurrentUserService currentUserService;
 
-    public CurrencyService(ExchangeRateRepository exchangeRateRepository, SettingRepository settingRepository) {
+    public CurrencyService(ExchangeRateRepository exchangeRateRepository,
+                           SettingRepository settingRepository,
+                           CurrentUserService currentUserService) {
         this.exchangeRateRepository = exchangeRateRepository;
         this.settingRepository = settingRepository;
+        this.currentUserService = currentUserService;
     }
 
     public String getBaseCurrency() {
-        return settingRepository.get("base_currency").orElse("INR");
+        return settingRepository.get(currentUserService.getCurrentUserId(), "base_currency").orElse("INR");
     }
 
     @Transactional
     public void setBaseCurrency(String newBaseCurrency) {
+        Long userId = currentUserService.getCurrentUserId();
         String newBase = newBaseCurrency.toUpperCase();
         String oldBase = getBaseCurrency();
 
@@ -37,7 +42,7 @@ public class CurrencyService {
         }
 
         // 2. Fetch the current exchange rate of the new base currency
-        BigDecimal rateOfNewBase = exchangeRateRepository.findByCurrencyCode(newBase)
+        BigDecimal rateOfNewBase = exchangeRateRepository.findByCurrencyCode(userId, newBase)
                 .map(ExchangeRate::getRateToBase)
                 .orElse(BigDecimal.ONE);
 
@@ -48,10 +53,10 @@ public class CurrencyService {
         // 3. Save/Update the OLD base currency in exchange_rates table
         // (1 unit of oldBase = 1 / rateOfNewBase units of newBase)
         BigDecimal oldBaseNewRate = BigDecimal.ONE.divide(rateOfNewBase, 6, RoundingMode.HALF_UP);
-        exchangeRateRepository.upsert(oldBase, oldBaseNewRate);
+        exchangeRateRepository.upsert(userId, oldBase, oldBaseNewRate);
 
         // 4. Recalculate all other exchange rates w.r.t the new base currency
-        List<ExchangeRate> existingRates = exchangeRateRepository.findAll();
+        List<ExchangeRate> existingRates = exchangeRateRepository.findAll(userId);
         for (ExchangeRate rate : existingRates) {
             String code = rate.getCurrencyCode();
 
@@ -60,30 +65,30 @@ public class CurrencyService {
             }
 
             if (code.equalsIgnoreCase(newBase)) {
-                exchangeRateRepository.upsert(newBase, BigDecimal.ONE);
+                exchangeRateRepository.upsert(userId, newBase, BigDecimal.ONE);
             } else {
                 BigDecimal newRate = rate.getRateToBase().divide(rateOfNewBase, 6, RoundingMode.HALF_UP);
-                exchangeRateRepository.upsert(code, newRate);
+                exchangeRateRepository.upsert(userId, code, newRate);
             }
         }
 
         // 5. Update the base currency setting in the database
-        settingRepository.set("base_currency", newBase);
+        settingRepository.set(userId, "base_currency", newBase);
     }
 
     public List<ExchangeRate> getAllRates() {
-        return exchangeRateRepository.findAll();
+        return exchangeRateRepository.findAll(currentUserService.getCurrentUserId());
     }
 
     public ExchangeRate upsertRate(String currencyCode, ExchangeRateRequest request) {
-        return exchangeRateRepository.upsert(currencyCode.toUpperCase(), request.getRateToBase());
+        return exchangeRateRepository.upsert(currentUserService.getCurrentUserId(), currencyCode.toUpperCase(), request.getRateToBase());
     }
 
     public BigDecimal toBase(BigDecimal amount, String currencyCode) {
         if (amount == null) {
             return BigDecimal.ZERO;
         }
-        BigDecimal rate = exchangeRateRepository.findByCurrencyCode(currencyCode)
+        BigDecimal rate = exchangeRateRepository.findByCurrencyCode(currentUserService.getCurrentUserId(), currencyCode)
                 .map(ExchangeRate::getRateToBase)
                 .orElse(BigDecimal.ONE);
         return amount.multiply(rate).setScale(4, RoundingMode.HALF_UP);

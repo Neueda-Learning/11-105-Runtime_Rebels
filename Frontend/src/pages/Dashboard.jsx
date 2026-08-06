@@ -27,8 +27,6 @@ export default function Dashboard() {
   const investmentsAsync = useAsync(listInvestments, [])
   const data = dashboard.data || {}
   const dashboardMovers = pick(data, ['topMovers', 'investments'], []) || []
-  console.log('data', data) // Debugging line
-  console.log('investments', investmentsAsync.data) // Debugging line
   // console.log('data',data.nextMilestone)
 
   const allInvestments = Array.isArray(investmentsAsync.data)
