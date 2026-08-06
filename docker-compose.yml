@@ -2,7 +2,7 @@ services:
   mysql:
     image: mysql:8.0
     container_name: portfolio-manager-mysql
-    restart: unless-stopped
+    restart: always
     environment:
       MYSQL_DATABASE: ${DB_NAME:-portfolio_manager}
       MYSQL_USER: ${DB_USERNAME:-portfolio_user}
@@ -25,6 +25,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: portfolio-manager-app
+    depends_on:
+              - mysql
     restart: unless-stopped
     environment:
       DB_URL: jdbc:mysql://mysql:3306/${DB_NAME:-portfolio_manager}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
