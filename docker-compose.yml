@@ -25,9 +25,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: portfolio-manager-app
-    depends_on:
-              - mysql
-    restart: unless-stopped
+   
+    restart: always
     environment:
       DB_URL: jdbc:mysql://mysql:3306/${DB_NAME:-portfolio_manager}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       DB_USERNAME: ${DB_USERNAME:-portfolio_user}
