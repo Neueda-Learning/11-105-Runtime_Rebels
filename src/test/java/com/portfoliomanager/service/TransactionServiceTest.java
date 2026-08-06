@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -41,15 +42,19 @@ class TransactionServiceTest {
 
     @Mock
     private InvestmentRepository investmentRepository;
+    private static final Long USER_ID = 1L;
 
     @Mock
     private InvestmentService investmentService;
+    @Mock
+    private CurrentUserService currentUserService;
 
     private TransactionService transactionService;
 
     @BeforeEach
     void setUp() {
-        transactionService = new TransactionService(transactionRepository, investmentRepository, investmentService);
+        lenient().when(currentUserService.getCurrentUserId()).thenReturn(USER_ID);
+        transactionService = new TransactionService(transactionRepository, investmentRepository, investmentService, currentUserService);
     }
 
     @Test
@@ -58,7 +63,7 @@ class TransactionServiceTest {
         Transaction tx = tx(1L, 10L, TransactionType.BUY, "2", "120", "240", null);
 
         when(investmentService.getOrThrow(10L)).thenReturn(inv);
-        when(transactionRepository.findByInvestmentId(10L)).thenReturn(List.of(tx));
+        when(transactionRepository.findByInvestmentId(USER_ID, 10L)).thenReturn(List.of(tx));
 
         List<TransactionResponse> responses = transactionService.findByInvestment(10L);
 
@@ -72,9 +77,9 @@ class TransactionServiceTest {
         Transaction tx1 = tx(1L, 10L, TransactionType.BUY, "2", "120", "240", null);
         Transaction tx2 = tx(2L, 11L, TransactionType.SELL, "1", "130", "130", "10");
 
-        when(transactionRepository.findAll()).thenReturn(List.of(tx1, tx2));
-        when(investmentRepository.findById(10L)).thenReturn(Optional.of(stockInvestment(10L, "AAPL", "USD", "1", "100", "100", "100")));
-        when(investmentRepository.findById(11L)).thenReturn(Optional.empty());
+        when(transactionRepository.findAll(USER_ID)).thenReturn(List.of(tx1, tx2));
+        when(investmentRepository.findById(USER_ID, 10L)).thenReturn(Optional.of(stockInvestment(10L, "AAPL", "USD", "1", "100", "100", "100")));
+        when(investmentRepository.findById(USER_ID, 11L)).thenReturn(Optional.empty());
 
         List<TransactionResponse> responses = transactionService.findAll();
 
@@ -92,7 +97,7 @@ class TransactionServiceTest {
             t.setId(1L);
             return t;
         });
-        when(investmentRepository.update(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(investmentRepository.update(eq(USER_ID), any(Investment.class))).thenAnswer(invocation -> invocation.getArgument(1));
 
         TransactionRequest req = new TransactionRequest();
         req.setType(TransactionType.BUY);
@@ -105,7 +110,7 @@ class TransactionServiceTest {
         TransactionResponse response = transactionService.record(10L, req);
 
         ArgumentCaptor<Investment> invCaptor = ArgumentCaptor.forClass(Investment.class);
-        verify(investmentRepository).update(invCaptor.capture());
+        verify(investmentRepository).update(eq(USER_ID), invCaptor.capture());
         Investment updated = invCaptor.getValue();
 
         assertEquals(0, new BigDecimal("15").compareTo(updated.getQuantity()));
@@ -131,7 +136,7 @@ class TransactionServiceTest {
             t.setId(2L);
             return t;
         });
-        when(investmentRepository.update(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(investmentRepository.update(eq(USER_ID), any(Investment.class))).thenAnswer(invocation -> invocation.getArgument(1));
 
         TransactionRequest req = new TransactionRequest();
         req.setType(TransactionType.SELL);
@@ -143,7 +148,7 @@ class TransactionServiceTest {
         TransactionResponse response = transactionService.record(10L, req);
 
         ArgumentCaptor<Investment> invCaptor = ArgumentCaptor.forClass(Investment.class);
-        verify(investmentRepository).update(invCaptor.capture());
+        verify(investmentRepository).update(eq(USER_ID), invCaptor.capture());
         Investment updated = invCaptor.getValue();
         assertEquals(0, BigDecimal.ZERO.compareTo(updated.getQuantity()));
         assertEquals(0, BigDecimal.ZERO.compareTo(updated.getInvestedAmount()));
@@ -169,7 +174,7 @@ class TransactionServiceTest {
                 () -> transactionService.record(10L, req));
 
         assertTrue(ex.getMessage().contains("Cannot sell"));
-        verify(investmentRepository, never()).update(any());
+        verify(investmentRepository, never()).update(eq(USER_ID), any(Investment.class));
         verify(transactionRepository, never()).save(any());
     }
 
@@ -178,7 +183,7 @@ class TransactionServiceTest {
         Investment cash = cashInvestment(20L, "CASH", "INR", "1000", "1000");
         when(investmentService.getOrThrow(20L)).thenReturn(cash);
         when(transactionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-        when(investmentRepository.update(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(investmentRepository.update(eq(USER_ID), any(Investment.class))).thenAnswer(invocation -> invocation.getArgument(1));
 
         TransactionRequest req = new TransactionRequest();
         req.setType(TransactionType.DEPOSIT);
@@ -210,7 +215,7 @@ class TransactionServiceTest {
         Investment cash = cashInvestment(20L, "CASH", "INR", "100", "300");
         when(investmentService.getOrThrow(20L)).thenReturn(cash);
         when(transactionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-        when(investmentRepository.update(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(investmentRepository.update(eq(USER_ID), any(Investment.class))).thenAnswer(invocation -> invocation.getArgument(1));
 
         TransactionRequest req = new TransactionRequest();
         req.setType(TransactionType.WITHDRAW);
@@ -228,7 +233,7 @@ class TransactionServiceTest {
         Investment fd = fdInvestment(30L, "FD001", "INR", "10000", "10200");
         when(investmentService.getOrThrow(30L)).thenReturn(fd);
         when(transactionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-        when(investmentRepository.update(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(investmentRepository.update(eq(USER_ID), any(Investment.class))).thenAnswer(invocation -> invocation.getArgument(1));
 
         TransactionRequest req = new TransactionRequest();
         req.setType(TransactionType.INTEREST);
@@ -254,7 +259,7 @@ class TransactionServiceTest {
         req.setTransactionDate(LocalDate.of(2026, 8, 5));
 
         assertThrows(InvalidOperationException.class, () -> transactionService.record(20L, req));
-        verify(investmentRepository, never()).update(any());
+        verify(investmentRepository, never()).update(eq(USER_ID), any(Investment.class));
     }
 
     @Test

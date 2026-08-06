@@ -5,6 +5,7 @@ import com.portfoliomanager.dto.PerformancePointResponse;
 import com.portfoliomanager.model.PortfolioSnapshot;
 import com.portfoliomanager.repository.InvestmentRepository;
 import com.portfoliomanager.repository.PortfolioSnapshotRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -24,6 +25,8 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class SnapshotServiceTest {
 
+    private static final Long USER_ID = 1L;
+
     @Mock
     private DashboardService dashboardService;
 
@@ -33,8 +36,16 @@ class SnapshotServiceTest {
     @Mock
     private InvestmentRepository investmentRepository;
 
+    @Mock
+    private CurrentUserService currentUserService;
+
     @InjectMocks
     private SnapshotService snapshotService;
+
+    @BeforeEach
+    void setUp() {
+        when(currentUserService.getCurrentUserId()).thenReturn(USER_ID);
+    }
 
     @Test
     void captureToday_buildsSnapshotUpsertsAndRollsCurrentValue() {
@@ -55,7 +66,7 @@ class SnapshotServiceTest {
         assertEquals(new BigDecimal("200.00"), result.getUnrealizedPlBase());
 
         ArgumentCaptor<PortfolioSnapshot> captor = ArgumentCaptor.forClass(PortfolioSnapshot.class);
-        verify(snapshotRepository).upsert(captor.capture());
+        verify(snapshotRepository).upsert(org.mockito.ArgumentMatchers.eq(USER_ID), captor.capture());
         PortfolioSnapshot upserted = captor.getValue();
         assertEquals(result.getSnapshotDate(), upserted.getSnapshotDate());
         assertEquals(result.getTotalInvestedBase(), upserted.getTotalInvestedBase());
@@ -63,7 +74,7 @@ class SnapshotServiceTest {
         assertEquals(result.getRealizedPlBase(), upserted.getRealizedPlBase());
         assertEquals(result.getUnrealizedPlBase(), upserted.getUnrealizedPlBase());
 
-        verify(investmentRepository).rollCurrentValueIntoPrevious();
+        verify(investmentRepository).rollCurrentValueIntoPrevious(USER_ID);
     }
 
     @Test
@@ -71,7 +82,7 @@ class SnapshotServiceTest {
         LocalDate from = LocalDate.of(2026, 8, 1);
         LocalDate to = LocalDate.of(2026, 8, 5);
 
-        when(snapshotRepository.findBetween(from, to)).thenReturn(List.of(
+        when(snapshotRepository.findBetween(USER_ID, from, to)).thenReturn(List.of(
                 PortfolioSnapshot.builder()
                         .snapshotDate(LocalDate.of(2026, 8, 1))
                         .totalInvestedBase(new BigDecimal("1000.00"))
@@ -101,13 +112,13 @@ class SnapshotServiceTest {
                 .realizedPlBase(new BigDecimal("10.00"))
                 .build();
 
-        when(snapshotRepository.findAll()).thenReturn(List.of(snapshot));
+        when(snapshotRepository.findAll(USER_ID)).thenReturn(List.of(snapshot));
 
         List<PerformancePointResponse> history = snapshotService.getHistory(null, null);
 
         assertEquals(1, history.size());
         assertEquals(LocalDate.of(2026, 8, 3), history.get(0).getDate());
         assertEquals(new BigDecimal("110.00"), history.get(0).getOverallPlBase());
-        verify(snapshotRepository).findAll();
+        verify(snapshotRepository).findAll(USER_ID);
     }
 }

@@ -31,6 +31,8 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class DashboardServiceTest {
 
+        private static final Long USER_ID = 1L;
+
     @Mock
     private InvestmentRepository investmentRepository;
     @Mock
@@ -39,6 +41,8 @@ class DashboardServiceTest {
     private CurrencyService currencyService;
     @Mock
     private MilestoneService milestoneService;
+        @Mock
+        private CurrentUserService currentUserService;
 
     @InjectMocks
     private DashboardService dashboardService;
@@ -86,8 +90,9 @@ class DashboardServiceTest {
                 .build();
 
         when(currencyService.getBaseCurrency()).thenReturn("INR");
-        when(investmentRepository.findAllActive()).thenReturn(List.of(usStock, inEtf));
-        when(transactionRepository.findAllRealizedPlTransactions())
+        when(currentUserService.getCurrentUserId()).thenReturn(USER_ID);
+        when(investmentRepository.findAllActive(USER_ID)).thenReturn(List.of(usStock, inEtf));
+        when(transactionRepository.findAllRealizedPlTransactions(USER_ID))
                 .thenReturn(List.of(sellUsd, sellInr, sellNullRealized));
         when(currencyService.toBase(any(BigDecimal.class), anyString()))
                 .thenAnswer(invocation -> convertToInr(invocation.getArgument(0), invocation.getArgument(1)));
@@ -125,8 +130,9 @@ class DashboardServiceTest {
     @Test
     void getDashboard_handlesEmptyPortfolioAndZeroDivisionSafely() {
         when(currencyService.getBaseCurrency()).thenReturn("INR");
-        when(investmentRepository.findAllActive()).thenReturn(List.of());
-        when(transactionRepository.findAllRealizedPlTransactions()).thenReturn(List.of());
+                when(currentUserService.getCurrentUserId()).thenReturn(USER_ID);
+                when(investmentRepository.findAllActive(USER_ID)).thenReturn(List.of());
+                when(transactionRepository.findAllRealizedPlTransactions(USER_ID)).thenReturn(List.of());
         when(milestoneService.findNext(BigDecimal.ZERO)).thenReturn(Optional.empty());
         when(milestoneService.countAchieved()).thenReturn(0L);
 

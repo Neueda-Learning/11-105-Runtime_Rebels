@@ -7,7 +7,6 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
-import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.util.List;
@@ -34,8 +33,10 @@ public class TransactionRepository {
                 "SELECT t.* FROM transactions t JOIN investments i ON i.id = t.investment_id WHERE i.user_id = ? ORDER BY t.transaction_date DESC, t.id DESC", rowMapper, userId);
     }
 
-    public Optional<Transaction> findById(Long id) {
-        return jdbcTemplate.query("SELECT * FROM transactions WHERE id = ?", rowMapper, id)
+    public Optional<Transaction> findById(Long userId, Long id) {
+        return jdbcTemplate.query(
+                "SELECT t.* FROM transactions t JOIN investments i ON i.id = t.investment_id WHERE i.user_id = ? AND t.id = ?",
+                rowMapper, userId, id)
                 .stream().findFirst();
     }
 
@@ -61,7 +62,12 @@ public class TransactionRepository {
         }, keyHolder);
 
         Long newId = keyHolder.getKey().longValue();
-        return findById(newId).orElseThrow();
+        Long userId = jdbcTemplate.queryForObject(
+                "SELECT user_id FROM investments WHERE id = ?", Long.class, tx.getInvestmentId());
+        if (userId == null) {
+            throw new IllegalStateException("Cannot resolve transaction owner from investment_id=" + tx.getInvestmentId());
+        }
+        return findById(userId, newId).orElseThrow();
     }
 
     /** Sum of realized P/L across all SELL transactions, in instrument currency per row - conversion happens in the service layer. */
@@ -70,7 +76,9 @@ public class TransactionRepository {
                 "SELECT t.* FROM transactions t JOIN investments i ON i.id = t.investment_id WHERE i.user_id = ? AND t.type = 'SELL' AND t.realized_pl IS NOT NULL", rowMapper, userId);
     }
 
-    public boolean deleteById(Long id) {
-        return jdbcTemplate.update("DELETE FROM transactions WHERE id = ?", id) > 0;
+    public boolean deleteById(Long userId, Long id) {
+        return jdbcTemplate.update(
+                "DELETE FROM transactions WHERE id = ? AND investment_id IN (SELECT id FROM investments WHERE user_id = ?)",
+                id, userId) > 0;
     }
 }

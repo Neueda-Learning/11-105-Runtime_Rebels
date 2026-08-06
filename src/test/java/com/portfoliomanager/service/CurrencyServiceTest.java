@@ -4,6 +4,7 @@ import com.portfoliomanager.dto.ExchangeRateRequest;
 import com.portfoliomanager.model.ExchangeRate;
 import com.portfoliomanager.repository.ExchangeRateRepository;
 import com.portfoliomanager.repository.SettingRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -17,7 +18,10 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -25,18 +29,28 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class CurrencyServiceTest {
 
+    private static final Long USER_ID = 1L;
+
     @Mock
     private ExchangeRateRepository exchangeRateRepository;
 
     @Mock
     private SettingRepository settingRepository;
 
+    @Mock
+    private CurrentUserService currentUserService;
+
     @InjectMocks
     private CurrencyService currencyService;
 
+    @BeforeEach
+    void setUp() {
+        lenient().when(currentUserService.getCurrentUserId()).thenReturn(USER_ID);
+    }
+
     @Test
     void getBaseCurrency_returnsDefaultWhenNotConfigured() {
-        when(settingRepository.get("base_currency")).thenReturn(Optional.empty());
+        when(settingRepository.get(USER_ID, "base_currency")).thenReturn(Optional.empty());
 
         String base = currencyService.getBaseCurrency();
 
@@ -45,20 +59,20 @@ class CurrencyServiceTest {
 
     @Test
     void setBaseCurrency_returnsEarlyWhenCurrencyIsSame() {
-        when(settingRepository.get("base_currency")).thenReturn(Optional.of("INR"));
+        when(settingRepository.get(USER_ID, "base_currency")).thenReturn(Optional.of("INR"));
 
         currencyService.setBaseCurrency("inr");
 
-        verify(exchangeRateRepository, never()).findByCurrencyCode(anyString());
-        verify(exchangeRateRepository, never()).findAll();
-        verify(exchangeRateRepository, never()).upsert(anyString(), any(BigDecimal.class));
-        verify(settingRepository, never()).set(anyString(), anyString());
+        verify(exchangeRateRepository, never()).findByCurrencyCode(anyLong(), anyString());
+        verify(exchangeRateRepository, never()).findAll(anyLong());
+        verify(exchangeRateRepository, never()).upsert(anyLong(), anyString(), any(BigDecimal.class));
+        verify(settingRepository, never()).set(anyLong(), anyString(), anyString());
     }
 
     @Test
     void setBaseCurrency_throwsWhenNewBaseRateIsZero() {
-        when(settingRepository.get("base_currency")).thenReturn(Optional.of("INR"));
-        when(exchangeRateRepository.findByCurrencyCode("USD"))
+        when(settingRepository.get(USER_ID, "base_currency")).thenReturn(Optional.of("INR"));
+        when(exchangeRateRepository.findByCurrencyCode(USER_ID, "USD"))
                 .thenReturn(
                         Optional.of(ExchangeRate.builder().currencyCode("USD").rateToBase(BigDecimal.ZERO).build()));
 
@@ -66,26 +80,26 @@ class CurrencyServiceTest {
                 () -> currencyService.setBaseCurrency("usd"));
 
         assertEquals("Exchange rate for new base currency cannot be zero.", ex.getMessage());
-        verify(settingRepository, never()).set("base_currency", "USD");
+        verify(settingRepository, never()).set(eq(USER_ID), eq("base_currency"), eq("USD"));
     }
 
     @Test
     void setBaseCurrency_recalculatesRatesAndUpdatesBaseSetting() {
-        when(settingRepository.get("base_currency")).thenReturn(Optional.of("INR"));
-        when(exchangeRateRepository.findByCurrencyCode("USD"))
+        when(settingRepository.get(USER_ID, "base_currency")).thenReturn(Optional.of("INR"));
+        when(exchangeRateRepository.findByCurrencyCode(USER_ID, "USD"))
                 .thenReturn(Optional.of(
                         ExchangeRate.builder().currencyCode("USD").rateToBase(new BigDecimal("80.000000")).build()));
-        when(exchangeRateRepository.findAll()).thenReturn(List.of(
+        when(exchangeRateRepository.findAll(USER_ID)).thenReturn(List.of(
                 ExchangeRate.builder().currencyCode("USD").rateToBase(new BigDecimal("80.000000")).build(),
                 ExchangeRate.builder().currencyCode("EUR").rateToBase(new BigDecimal("90.000000")).build(),
                 ExchangeRate.builder().currencyCode("INR").rateToBase(BigDecimal.ONE).build()));
 
         currencyService.setBaseCurrency("usd");
 
-        verify(exchangeRateRepository).upsert("INR", new BigDecimal("0.012500"));
-        verify(exchangeRateRepository).upsert("USD", BigDecimal.ONE);
-        verify(exchangeRateRepository).upsert("EUR", new BigDecimal("1.125000"));
-        verify(settingRepository).set("base_currency", "USD");
+        verify(exchangeRateRepository).upsert(USER_ID, "INR", new BigDecimal("0.012500"));
+        verify(exchangeRateRepository).upsert(USER_ID, "USD", BigDecimal.ONE);
+        verify(exchangeRateRepository).upsert(USER_ID, "EUR", new BigDecimal("1.125000"));
+        verify(settingRepository).set(USER_ID, "base_currency", "USD");
     }
 
     @Test
@@ -98,7 +112,7 @@ class CurrencyServiceTest {
                 .rateToBase(new BigDecimal("1.2345"))
                 .build();
 
-        when(exchangeRateRepository.upsert("EUR", new BigDecimal("1.2345"))).thenReturn(expected);
+        when(exchangeRateRepository.upsert(USER_ID, "EUR", new BigDecimal("1.2345"))).thenReturn(expected);
 
         ExchangeRate result = currencyService.upsertRate("eur", request);
 
@@ -111,12 +125,12 @@ class CurrencyServiceTest {
         BigDecimal converted = currencyService.toBase(null, "USD");
 
         assertEquals(BigDecimal.ZERO, converted);
-        verify(exchangeRateRepository, never()).findByCurrencyCode(anyString());
+        verify(exchangeRateRepository, never()).findByCurrencyCode(anyLong(), anyString());
     }
 
     @Test
     void toBase_usesRateAndRoundsToFourDecimals() {
-        when(exchangeRateRepository.findByCurrencyCode("USD"))
+        when(exchangeRateRepository.findByCurrencyCode(USER_ID, "USD"))
                 .thenReturn(Optional.of(
                         ExchangeRate.builder().currencyCode("USD").rateToBase(new BigDecimal("83.123456")).build()));
 
@@ -127,7 +141,7 @@ class CurrencyServiceTest {
 
     @Test
     void toBase_defaultsToOneWhenRateMissing() {
-        when(exchangeRateRepository.findByCurrencyCode("ABC")).thenReturn(Optional.empty());
+        when(exchangeRateRepository.findByCurrencyCode(USER_ID, "ABC")).thenReturn(Optional.empty());
 
         BigDecimal converted = currencyService.toBase(new BigDecimal("12.34567"), "ABC");
 

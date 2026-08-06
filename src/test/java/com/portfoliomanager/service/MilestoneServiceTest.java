@@ -30,14 +30,20 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class MilestoneServiceTest {
 
+    private static final Long USER_ID = 1L;
+
     @Mock
     private MilestoneRepository milestoneRepository;
+
+    @Mock
+    private CurrentUserService currentUserService;
 
     private MilestoneService milestoneService;
 
     @BeforeEach
     void setUp() {
-        milestoneService = new MilestoneService(milestoneRepository);
+        when(currentUserService.getCurrentUserId()).thenReturn(USER_ID);
+        milestoneService = new MilestoneService(milestoneRepository, currentUserService);
     }
 
     @Test
@@ -47,8 +53,8 @@ class MilestoneServiceTest {
         request.setThresholdValueBase(new BigDecimal("5000000"));
         request.setComparisonLabel("Porsche 911");
 
-        when(milestoneRepository.save(any())).thenAnswer(invocation -> {
-            Milestone m = invocation.getArgument(0);
+        when(milestoneRepository.save(eq(USER_ID), any())).thenAnswer(invocation -> {
+            Milestone m = invocation.getArgument(1);
             m.setId(1L);
             return m;
         });
@@ -56,7 +62,7 @@ class MilestoneServiceTest {
         MilestoneResponse response = milestoneService.create(request);
 
         ArgumentCaptor<Milestone> captor = ArgumentCaptor.forClass(Milestone.class);
-        verify(milestoneRepository).save(captor.capture());
+        verify(milestoneRepository).save(eq(USER_ID), captor.capture());
         Milestone saved = captor.getValue();
 
         assertFalse(saved.isAchieved());
@@ -72,7 +78,7 @@ class MilestoneServiceTest {
     void findAll_mapsProgressAndCapsAtHundred() {
         Milestone first = milestone(1L, "Bike", "1000", false, null);
         Milestone second = milestone(2L, "Car", "10000", true, LocalDate.of(2025, 1, 1));
-        when(milestoneRepository.findAll()).thenReturn(List.of(first, second));
+        when(milestoneRepository.findAll(USER_ID)).thenReturn(List.of(first, second));
 
         List<MilestoneResponse> responses = milestoneService.findAll(new BigDecimal("2500"));
 
@@ -84,7 +90,7 @@ class MilestoneServiceTest {
     @Test
     void findAll_whenCurrentValueNullProgressIsZero() {
         Milestone first = milestone(1L, "Bike", "1000", false, null);
-        when(milestoneRepository.findAll()).thenReturn(List.of(first));
+        when(milestoneRepository.findAll(USER_ID)).thenReturn(List.of(first));
 
         List<MilestoneResponse> responses = milestoneService.findAll(null);
 
@@ -93,18 +99,18 @@ class MilestoneServiceTest {
 
     @Test
     void delete_whenRepositoryReturnsFalseThrowsNotFound() {
-        when(milestoneRepository.deleteById(99L)).thenReturn(false);
+        when(milestoneRepository.deleteById(USER_ID, 99L)).thenReturn(false);
 
         assertThrows(ResourceNotFoundException.class, () -> milestoneService.delete(99L));
     }
 
     @Test
     void delete_whenRepositoryReturnsTrueSucceeds() {
-        when(milestoneRepository.deleteById(99L)).thenReturn(true);
+        when(milestoneRepository.deleteById(USER_ID, 99L)).thenReturn(true);
 
         milestoneService.delete(99L);
 
-        verify(milestoneRepository).deleteById(99L);
+        verify(milestoneRepository).deleteById(USER_ID, 99L);
     }
 
     @Test
@@ -113,13 +119,13 @@ class MilestoneServiceTest {
         Milestone shouldMark = milestone(2L, "Medium", "2000", false, null);
         Milestone shouldNotMark = milestone(3L, "Large", "5000", false, null);
 
-        when(milestoneRepository.findAll()).thenReturn(List.of(achievedAlready, shouldMark, shouldNotMark));
+        when(milestoneRepository.findAll(USER_ID)).thenReturn(List.of(achievedAlready, shouldMark, shouldNotMark));
 
         milestoneService.refreshAchievedStatus(new BigDecimal("3000"));
 
-        verify(milestoneRepository).markAchieved(eq(2L), any(LocalDate.class));
-        verify(milestoneRepository, never()).markAchieved(eq(1L), any(LocalDate.class));
-        verify(milestoneRepository, never()).markAchieved(eq(3L), any(LocalDate.class));
+        verify(milestoneRepository).markAchieved(eq(USER_ID), eq(2L), any(LocalDate.class));
+        verify(milestoneRepository, never()).markAchieved(eq(USER_ID), eq(1L), any(LocalDate.class));
+        verify(milestoneRepository, never()).markAchieved(eq(USER_ID), eq(3L), any(LocalDate.class));
     }
 
     @Test
@@ -127,7 +133,7 @@ class MilestoneServiceTest {
         Milestone m1 = milestone(1L, "A", "10000", false, null);
         Milestone m2 = milestone(2L, "B", "5000", false, null);
         Milestone m3 = milestone(3L, "C", "3000", true, LocalDate.of(2025, 2, 2));
-        when(milestoneRepository.findAll()).thenReturn(List.of(m1, m2, m3));
+        when(milestoneRepository.findAll(USER_ID)).thenReturn(List.of(m1, m2, m3));
 
         Optional<MilestoneResponse> next = milestoneService.findNext(new BigDecimal("2500"));
 
@@ -139,7 +145,7 @@ class MilestoneServiceTest {
     @Test
     void findNext_returnsEmptyWhenAllAreAchieved() {
         Milestone m1 = milestone(1L, "A", "1000", true, LocalDate.of(2025, 1, 1));
-        when(milestoneRepository.findAll()).thenReturn(List.of(m1));
+        when(milestoneRepository.findAll(USER_ID)).thenReturn(List.of(m1));
 
         Optional<MilestoneResponse> next = milestoneService.findNext(new BigDecimal("5000"));
 
@@ -151,7 +157,7 @@ class MilestoneServiceTest {
         Milestone m1 = milestone(1L, "A", "1000", true, LocalDate.of(2025, 1, 1));
         Milestone m2 = milestone(2L, "B", "2000", false, null);
         Milestone m3 = milestone(3L, "C", "3000", true, LocalDate.of(2025, 1, 1));
-        when(milestoneRepository.findAll()).thenReturn(List.of(m1, m2, m3));
+        when(milestoneRepository.findAll(USER_ID)).thenReturn(List.of(m1, m2, m3));
 
         long count = milestoneService.countAchieved();
 
