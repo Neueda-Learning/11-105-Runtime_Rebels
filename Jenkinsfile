@@ -74,7 +74,31 @@ pipeline {
             }
         }
 
-    
+        stage('Verify') {
+            steps {
+                sh '''
+                    set -a
+                    . ./.env
+                    set +a
+
+                    docker ps --format "table {{.Names}}\\t{{.Status}}\\t{{.Ports}}"
+
+                    APP_PORT="${APP_PORT:-8083}"
+                    for i in $(seq 1 30); do
+                        if curl -fsS "http://localhost:${APP_PORT}/actuator/health" | grep -q '"status":"UP"'; then
+                            echo "Backend is healthy."
+                            exit 0
+                        fi
+                        echo "Waiting for backend health... ($i/30)"
+                        sleep 5
+                    done
+
+                    echo "Backend failed to become healthy. Recent logs:"
+                    docker logs --tail 200 portfolio-manager-app || true
+                    exit 1
+                '''
+            }
+        }
 
     }
 
