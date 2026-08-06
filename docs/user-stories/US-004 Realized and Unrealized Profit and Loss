@@ -1,1 +1,9 @@
 
+
+User story:
+As a customer, I want realized and unrealized P/L displayed separately, so that I can judge performance accurately.
+
+Acceptance criteria:
+- Given completed SELL transactions, when I view the dashboard, then realized P/L is displayed.
+- Given active holdings, when I view the dashboard, then unrealized P/L is displayed.
+- Given both values exist, when I view overall performance, then total P/L and P/L percent are displayed.
