@@ -7,7 +7,6 @@ import com.portfoliomanager.model.Investment;
 import com.portfoliomanager.model.InvestmentStatus;
 import com.portfoliomanager.model.InvestmentType;
 import com.portfoliomanager.model.Transaction;
-import com.portfoliomanager.model.TransactionType;
 import com.portfoliomanager.repository.InvestmentRepository;
 import com.portfoliomanager.repository.TransactionRepository;
 import org.springframework.stereotype.Service;
@@ -19,7 +18,8 @@ import java.util.List;
 
 /**
  * Records BUY/SELL/DEPOSIT/WITHDRAW/INTEREST transactions and keeps the parent
- * investment's quantity, average cost, invested amount and current value in sync -
+ * investment's quantity, average cost, invested amount and current value in
+ * sync -
  * this is also where realized profit/loss is captured (on SELL), satisfying the
  * customer's requirement to see realized vs unrealized P/L separately.
  */
@@ -29,27 +29,32 @@ public class TransactionService {
     private final TransactionRepository transactionRepository;
     private final InvestmentRepository investmentRepository;
     private final InvestmentService investmentService;
+    private final CurrentUserService currentUserService;
 
     public TransactionService(TransactionRepository transactionRepository,
-                               InvestmentRepository investmentRepository,
-                               InvestmentService investmentService) {
+            InvestmentRepository investmentRepository,
+            InvestmentService investmentService,
+            CurrentUserService currentUserService) {
         this.transactionRepository = transactionRepository;
         this.investmentRepository = investmentRepository;
         this.investmentService = investmentService;
+        this.currentUserService = currentUserService;
     }
 
     public List<TransactionResponse> findByInvestment(Long investmentId) {
+        Long userId = currentUserService.getCurrentUserId();
         Investment investment = investmentService.getOrThrow(investmentId);
-        return transactionRepository.findByInvestmentId(investmentId).stream()
+        return transactionRepository.findByInvestmentId(userId, investmentId).stream()
                 .map(tx -> toResponse(tx, investment.getSymbol()))
                 .toList();
     }
 
     public List<TransactionResponse> findAll() {
-        List<Transaction> all = transactionRepository.findAll();
+        Long userId = currentUserService.getCurrentUserId();
+        List<Transaction> all = transactionRepository.findAll(userId);
         return all.stream()
                 .map(tx -> {
-                    String symbol = investmentRepository.findById(tx.getInvestmentId())
+                    String symbol = investmentRepository.findById(userId, tx.getInvestmentId())
                             .map(Investment::getSymbol).orElse(null);
                     return toResponse(tx, symbol);
                 })
@@ -78,7 +83,7 @@ public class TransactionService {
             case INTEREST -> applyInterest(investment, request);
         }
 
-        investmentRepository.update(investment);
+        investmentRepository.update(currentUserService.getCurrentUserId(), investment);
         Transaction saved = transactionRepository.save(txBuilder.build());
         return toResponse(saved, investment.getSymbol());
     }
@@ -165,7 +170,8 @@ public class TransactionService {
 
     private BigDecimal requirePositive(BigDecimal value, String field) {
         if (value == null || value.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new InvalidOperationException(field + " must be provided and greater than zero for this transaction type");
+            throw new InvalidOperationException(
+                    field + " must be provided and greater than zero for this transaction type");
         }
         return value;
     }

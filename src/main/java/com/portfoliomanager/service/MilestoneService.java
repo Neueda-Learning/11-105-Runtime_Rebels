@@ -22,13 +22,15 @@ import java.util.Optional;
 public class MilestoneService {
 
     private final MilestoneRepository milestoneRepository;
+    private final CurrentUserService currentUserService;
 
-    public MilestoneService(MilestoneRepository milestoneRepository) {
+    public MilestoneService(MilestoneRepository milestoneRepository, CurrentUserService currentUserService) {
         this.milestoneRepository = milestoneRepository;
+        this.currentUserService = currentUserService;
     }
 
     public List<MilestoneResponse> findAll(BigDecimal currentPortfolioValueBase) {
-        return milestoneRepository.findAll().stream()
+        return milestoneRepository.findAll(currentUserService.getCurrentUserId()).stream()
                 .map(m -> toResponse(m, currentPortfolioValueBase))
                 .toList();
     }
@@ -40,34 +42,35 @@ public class MilestoneService {
                 .comparisonLabel(request.getComparisonLabel())
                 .achieved(false)
                 .build();
-        return toResponse(milestoneRepository.save(milestone), BigDecimal.ZERO);
+        return toResponse(milestoneRepository.save(currentUserService.getCurrentUserId(), milestone), BigDecimal.ZERO);
     }
 
     public void delete(Long id) {
-        if (!milestoneRepository.deleteById(id)) {
+        if (!milestoneRepository.deleteById(currentUserService.getCurrentUserId(), id)) {
             throw new ResourceNotFoundException("Milestone not found with id: " + id);
         }
     }
 
     /** Marks any milestone whose threshold has now been crossed as achieved. Called after dashboard recompute. */
     public void refreshAchievedStatus(BigDecimal currentPortfolioValueBase) {
-        for (Milestone m : milestoneRepository.findAll()) {
+        Long userId = currentUserService.getCurrentUserId();
+        for (Milestone m : milestoneRepository.findAll(userId)) {
             if (!m.isAchieved() && currentPortfolioValueBase.compareTo(m.getThresholdValueBase()) >= 0) {
-                milestoneRepository.markAchieved(m.getId(), LocalDate.now());
+                milestoneRepository.markAchieved(userId, m.getId(), LocalDate.now());
             }
         }
     }
 
     /** The next unachieved milestone (smallest threshold not yet reached) - useful for a "how close am I" widget. */
     public Optional<MilestoneResponse> findNext(BigDecimal currentPortfolioValueBase) {
-        return milestoneRepository.findAll().stream()
+        return milestoneRepository.findAll(currentUserService.getCurrentUserId()).stream()
                 .filter(m -> !m.isAchieved())
                 .min(Comparator.comparing(Milestone::getThresholdValueBase))
                 .map(m -> toResponse(m, currentPortfolioValueBase));
     }
 
     public long countAchieved() {
-        return milestoneRepository.findAll().stream().filter(Milestone::isAchieved).count();
+        return milestoneRepository.findAll(currentUserService.getCurrentUserId()).stream().filter(Milestone::isAchieved).count();
     }
 
     private MilestoneResponse toResponse(Milestone m, BigDecimal currentPortfolioValueBase) {

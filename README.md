@@ -1,9 +1,9 @@
-# Portfolio Manager — Backend
+# Portfolio Manager
 
-A REST API backend that lets a customer track stocks, ETFs, fixed deposits (FDs) and
-cash from one place — across multiple countries and currencies — with a single
-consolidated dashboard, realized vs. unrealized P/L, performance history, and
-wealth milestones.
+A full-stack portfolio manager that lets each signed-in user track stocks, ETFs,
+fixed deposits (FDs) and cash from one place — across multiple countries and
+currencies — with a private dashboard, realized vs. unrealized P/L, performance
+history, and wealth milestones.
 
 Built with **Spring Boot + plain JDBC (no JPA/Hibernate) + MySQL + Docker**, following
 an agile approach: the data model and API are intentionally minimal-but-complete for
@@ -26,12 +26,13 @@ without reworking existing pieces.
 6. [Entity-Relationship Diagram](#entity-relationship-diagram)
 7. [Core Domain Logic](#core-domain-logic)
 8. [API Overview](#api-overview)
-9. [Frontend Enterprise System Design](#frontend-enterprise-system-design)
-10. [Running the Project](#running-the-project)
-11. [Configuration](#configuration)
-12. [Mock/Test Data](#mocktest-data)
-13. [Design Decisions & Trade-offs](#design-decisions--trade-offs)
-14. [Roadmap / Future Iterations](#roadmap--future-iterations)
+9. [Authentication & Multi-User Model](#authentication--multi-user-model)
+10. [Frontend Enterprise System Design](#frontend-enterprise-system-design)
+11. [Running the Project](#running-the-project)
+12. [Configuration](#configuration)
+13. [Mock/Test Data](#mocktest-data)
+14. [Design Decisions & Trade-offs](#design-decisions--trade-offs)
+15. [Roadmap / Future Iterations](#roadmap--future-iterations)
 
 ---
 
@@ -165,6 +166,36 @@ portfolio-manager/
 ---
 
 ## Data Flow
+
+### Authentication & request ownership
+
+```mermaid
+sequenceDiagram
+  actor User
+  participant FE as React Frontend
+  participant Google as Google Identity Services
+  participant API as Spring Boot API
+  participant DB as MySQL
+
+  User->>FE: Open app
+  FE->>Google: Render Google sign-in button
+  User->>Google: Sign in
+  Google-->>FE: Google ID token (JWT)
+  FE->>API: Authorization: Bearer <id_token>
+  API->>API: Validate issuer + audience
+  API->>DB: Upsert app_users row by Google subject
+  API-->>FE: /api/auth/me + user-scoped portfolio data
+```
+
+Each authenticated Google account is mapped to one `app_users` row. The API now scopes:
+
+- investments
+- milestones
+- base-currency settings
+- exchange rates
+- dashboard snapshots
+
+to the current authenticated user, so one user's dashboard cannot read or mutate another user's data.
 
 ### 1. Adding an investment and buying more of it
 
@@ -706,6 +737,13 @@ Every frontend feature is production-ready only when all are true:
 
 ## Running the Project
 
+Before starting the app, create a Google OAuth client for a web application and add:
+
+- Authorized JavaScript origin: `http://localhost:5173` for local Vite dev
+- Authorized JavaScript origin: `http://localhost:8085` if you use `docker-compose`
+
+Then provide the same client id to both frontend and backend.
+
 ### Option A — Docker Compose (recommended)
 
 ```bash
@@ -737,6 +775,44 @@ java -jar target/portfolio-manager.jar \
 ---
 
 ## Configuration
+
+### Required authentication variables
+
+| Variable | Used by | Purpose |
+|----------|---------|---------|
+| `GOOGLE_CLIENT_ID` | backend + frontend | Validates Google token audience in Spring and initializes Google sign-in in React |
+| `FRONTEND_ORIGIN` | backend | Exact browser origin allowed by CORS |
+
+### Local frontend example
+
+```bash
+cd Frontend
+set VITE_GOOGLE_CLIENT_ID=your-google-web-client-id.apps.googleusercontent.com
+npm install
+npm run dev
+```
+
+### Local backend example
+
+```bash
+set GOOGLE_CLIENT_ID=your-google-web-client-id.apps.googleusercontent.com
+set FRONTEND_ORIGIN=http://localhost:5173
+mvn spring-boot:run
+```
+
+### Docker Compose example
+
+```bash
+set GOOGLE_CLIENT_ID=your-google-web-client-id.apps.googleusercontent.com
+set FRONTEND_ORIGIN=http://localhost:8085
+docker-compose up --build
+```
+
+### Authentication behavior
+
+- All `/api/**` endpoints now require a valid Google ID token.
+- The frontend stores the Google credential locally and sends it as a bearer token.
+- `GET /api/auth/me` is the bootstrap endpoint used after sign-in and page reloads.
 
 All configuration is environment-variable driven (see `application.yml`):
 

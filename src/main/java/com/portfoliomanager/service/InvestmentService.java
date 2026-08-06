@@ -20,14 +20,18 @@ public class InvestmentService {
 
     private final InvestmentRepository investmentRepository;
     private final CurrencyService currencyService;
+    private final CurrentUserService currentUserService;
 
-    public InvestmentService(InvestmentRepository investmentRepository, CurrencyService currencyService) {
+    public InvestmentService(InvestmentRepository investmentRepository,
+                             CurrencyService currencyService,
+                             CurrentUserService currentUserService) {
         this.investmentRepository = investmentRepository;
         this.currencyService = currencyService;
+        this.currentUserService = currentUserService;
     }
 
     public List<InvestmentResponse> findAll(InvestmentType type, String country, InvestmentStatus status) {
-        return investmentRepository.findAll(type, country, status).stream()
+        return investmentRepository.findAll(currentUserService.getCurrentUserId(), type, country, status).stream()
                 .map(this::toResponse)
                 .toList();
     }
@@ -37,7 +41,7 @@ public class InvestmentService {
     }
 
     public Investment getOrThrow(Long id) {
-        return investmentRepository.findById(id)
+        return investmentRepository.findById(currentUserService.getCurrentUserId(), id)
                 .orElseThrow(() -> new ResourceNotFoundException("Investment not found with id: " + id));
     }
 
@@ -82,7 +86,7 @@ public class InvestmentService {
                 .notes(request.getNotes())
                 .build();
 
-        return toResponse(investmentRepository.save(investment));
+        return toResponse(investmentRepository.save(currentUserService.getCurrentUserId(), investment));
     }
 
     public InvestmentResponse update(Long id, InvestmentRequest request) {
@@ -102,7 +106,7 @@ public class InvestmentService {
         // they are only ever changed via transactions (buy/sell/deposit/etc.) or the
         // dedicated price-refresh endpoint, so the audit trail always stays consistent.
 
-        return toResponse(investmentRepository.update(existing));
+        return toResponse(investmentRepository.update(currentUserService.getCurrentUserId(), existing));
     }
 
     public InvestmentResponse updatePrice(Long id, PriceUpdateRequest request) {
@@ -124,15 +128,16 @@ public class InvestmentService {
             newCurrentValue = request.getCurrentValue();
         }
 
-        investmentRepository.updatePrice(id, newCurrentPrice, newCurrentValue);
+        investmentRepository.updatePrice(currentUserService.getCurrentUserId(), id, newCurrentPrice, newCurrentValue);
         return toResponse(getOrThrow(id));
     }
 
     public void delete(Long id) {
-        if (!investmentRepository.existsById(id)) {
+        Long userId = currentUserService.getCurrentUserId();
+        if (!investmentRepository.existsById(userId, id)) {
             throw new ResourceNotFoundException("Investment not found with id: " + id);
         }
-        investmentRepository.deleteById(id);
+        investmentRepository.deleteById(userId, id);
     }
 
     private void validateForType(InvestmentRequest request) {

@@ -21,17 +21,21 @@ public class SnapshotService {
     private final DashboardService dashboardService;
     private final PortfolioSnapshotRepository snapshotRepository;
     private final InvestmentRepository investmentRepository;
+        private final CurrentUserService currentUserService;
 
     public SnapshotService(DashboardService dashboardService,
                             PortfolioSnapshotRepository snapshotRepository,
-                            InvestmentRepository investmentRepository) {
+                                                        InvestmentRepository investmentRepository,
+                                                        CurrentUserService currentUserService) {
         this.dashboardService = dashboardService;
         this.snapshotRepository = snapshotRepository;
         this.investmentRepository = investmentRepository;
+                this.currentUserService = currentUserService;
     }
 
     /** Take (or refresh) today's snapshot on demand - also triggered automatically once a day. */
     public PortfolioSnapshot captureToday() {
+                Long userId = currentUserService.getCurrentUserId();
         DashboardResponse dashboard = dashboardService.getDashboard();
 
         PortfolioSnapshot snapshot = PortfolioSnapshot.builder()
@@ -42,15 +46,16 @@ public class SnapshotService {
                 .unrealizedPlBase(dashboard.getUnrealizedPl())
                 .build();
 
-        snapshotRepository.upsert(snapshot);
-        investmentRepository.rollCurrentValueIntoPrevious();
+        snapshotRepository.upsert(userId, snapshot);
+        investmentRepository.rollCurrentValueIntoPrevious(userId);
         return snapshot;
     }
 
     public List<PerformancePointResponse> getHistory(LocalDate from, LocalDate to) {
+        Long userId = currentUserService.getCurrentUserId();
         List<PortfolioSnapshot> snapshots = (from != null && to != null)
-                ? snapshotRepository.findBetween(from, to)
-                : snapshotRepository.findAll();
+                ? snapshotRepository.findBetween(userId, from, to)
+                : snapshotRepository.findAll(userId);
 
         return snapshots.stream()
                 .map(s -> PerformancePointResponse.builder()

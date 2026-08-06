@@ -2,10 +2,16 @@ spring:
   application:
     name: portfolio-manager
 
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://accounts.google.com
+
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/portfolio_manager?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
     username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:n3u3da!}
+    password: ${DB_PASSWORD:ms@5Expert}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       connection-timeout: 20000
@@ -46,6 +52,8 @@ springdoc:
 # Application specific configuration
 portfolio:
   base-currency: ${BASE_CURRENCY:INR}
+  frontend-origin: ${FRONTEND_ORIGIN:http://localhost:5173}
+  google-client-id: ${GOOGLE_CLIENT_ID:228581062060-5ldjfi0mv630si31duugdec84amo4g69.apps.googleusercontent.com}
   snapshot:
     cron: ${SNAPSHOT_CRON:0 5 0 * * *}   # every day just after midnight - records daily wealth snapshot
 

@@ -1,8 +1,10 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { LayoutDashboard, Wallet, Flag, ArrowLeftRight, Settings } from 'lucide-react'
+import { LayoutDashboard, Wallet, Flag, ArrowLeftRight, Settings, LogOut } from 'lucide-react'
 import clsx from 'clsx'
+import { useState, useRef, useEffect } from 'react'
 import { useApp } from '../../context/AppContext.jsx'
 import ThemeSwitcher from '../../context/ThemeSwitcher.jsx'
+import { Button } from '../ui.jsx'
 
 const NAV = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
@@ -17,7 +19,7 @@ export default function AppShell() {
     <div className="min-h-screen bg-paper text-ink">
       <div className="mx-auto flex max-w-8xl">
         <DesktopSidebar />
-        <div className="min-h-screen flex-1 pb-24 md:pb-0">
+        <div className="min-h-screen min-w-0 flex-1 overflow-hidden pb-24 md:pb-0">
           <Topbar />
           <main className="px-4 py-6 sm:px-6 lg:px-8">
             <Outlet />
@@ -87,7 +89,18 @@ function MobileTabBar() {
 }
 
 function Topbar() {
-  const { theme, setTheme } = useApp()
+  const { theme, setTheme, user, signOut } = useApp()
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  // close dropdown when clicking outside
+  useEffect(() => {
+    function handleClick(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
 
   return (
     <header className="sticky top-0 z-20 flex items-center justify-between border-b border-line bg-paper/80 px-4 py-3 backdrop-blur sm:px-6 lg:px-8">
@@ -97,8 +110,37 @@ function Topbar() {
         </div>
         <span className="font-display text-sm">Wealth Ledger</span>
       </div>
-      <div className="hidden md:block" />
-      <ThemeSwitcher theme={theme} setTheme={setTheme} compact />
+      <div className="ml-auto flex items-center gap-3">
+        <ThemeSwitcher theme={theme} setTheme={setTheme} compact />
+        <div ref={ref} className="relative">
+          <button
+            onClick={() => setOpen(v => !v)}
+            className="cursor-pointer rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-rose"
+          >
+            {user?.avatarUrl ? (
+              <img src={user.avatarUrl} alt={user.displayName || user.email} className="h-9 w-9 rounded-full border border-line object-cover" />
+            ) : (
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-paper-sunken text-xs font-semibold text-ink-soft">
+                {(user?.displayName || user?.email || 'U').slice(0, 1).toUpperCase()}
+              </div>
+            )}
+          </button>
+          {open && (
+            <div className="absolute right-0 mt-2 w-44 rounded-xl border border-line bg-paper-raised shadow-lg">
+              <div className="border-b border-line px-4 py-2.5">
+                <p className="truncate text-sm font-semibold text-ink">{user?.displayName || 'User'}</p>
+                <p className="truncate text-xs text-ink-faint">{user?.email}</p>
+              </div>
+              <button
+                onClick={() => { setOpen(false); signOut() }}
+                className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-ink-faint hover:bg-paper-sunken hover:text-ink rounded-b-xl transition"
+              >
+                <LogOut className="h-3.5 w-3.5" /> Sign out
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
     </header>
   )
 }

@@ -1,11 +1,27 @@
 import axios from 'axios'
 
+const AUTH_TOKEN_KEY = 'pm-google-id-token'
+let authToken = localStorage.getItem(AUTH_TOKEN_KEY)
+
 // In dev, Vite proxies /api -> http://localhost:8080 (see vite.config.js).
 // In prod, set VITE_API_BASE_URL to your deployed Spring Boot host.
 const http = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
   headers: { 'Content-Type': 'application/json' },
 })
+
+export function setAuthToken(token) {
+  authToken = token || null
+  if (authToken) {
+    localStorage.setItem(AUTH_TOKEN_KEY, authToken)
+  } else {
+    localStorage.removeItem(AUTH_TOKEN_KEY)
+  }
+}
+
+export function getAuthToken() {
+  return authToken
+}
 
 function parseFieldErrors(details = []) {
   return details.reduce((acc, detail) => {
@@ -34,6 +50,16 @@ http.interceptors.response.use(
     return Promise.reject(enriched)
   }
 )
+
+http.interceptors.request.use((config) => {
+  if (authToken) {
+    config.headers = config.headers || {}
+    config.headers.Authorization = `Bearer ${authToken}`
+  }
+  return config
+})
+
+export const getCurrentUser = () => http.get('/auth/me').then((r) => r.data)
 
 /* ---------------------------- Dashboard ---------------------------- */
 export const getDashboard = () => http.get('/dashboard').then((r) => r.data)

@@ -9,6 +9,7 @@ import com.portfoliomanager.model.Investment;
 import com.portfoliomanager.model.InvestmentStatus;
 import com.portfoliomanager.model.InvestmentType;
 import com.portfoliomanager.repository.InvestmentRepository;
+import com.portfoliomanager.service.CurrentUserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,11 +43,15 @@ class InvestmentServiceTest {
     @Mock
     private CurrencyService currencyService;
 
+    @Mock
+    private CurrentUserService currentUserService;
+
     private InvestmentService investmentService;
 
     @BeforeEach
     void setUp() {
-        investmentService = new InvestmentService(investmentRepository, currencyService);
+        investmentService = new InvestmentService(investmentRepository, currencyService, currentUserService);
+        lenient().when(currentUserService.getCurrentUserId()).thenReturn(1L);
         lenient().when(currencyService.toBase(any(), anyString())).thenAnswer(invocation -> {
             BigDecimal amount = invocation.getArgument(0);
             return amount == null ? BigDecimal.ZERO : amount;
@@ -66,8 +71,8 @@ class InvestmentServiceTest {
         request.setCurrentPrice(null);
         request.setNotes("Long term");
 
-        when(investmentRepository.save(any())).thenAnswer(invocation -> {
-            Investment inv = invocation.getArgument(0);
+        when(investmentRepository.save(anyLong(), any())).thenAnswer(invocation -> {
+            Investment inv = invocation.getArgument(1);
             inv.setId(1L);
             return inv;
         });
@@ -75,7 +80,7 @@ class InvestmentServiceTest {
         InvestmentResponse response = investmentService.create(request);
 
         ArgumentCaptor<Investment> captor = ArgumentCaptor.forClass(Investment.class);
-        verify(investmentRepository).save(captor.capture());
+        verify(investmentRepository).save(eq(1L), captor.capture());
         Investment saved = captor.getValue();
 
         assertEquals(new BigDecimal("1000"), saved.getInvestedAmount());
@@ -100,8 +105,8 @@ class InvestmentServiceTest {
         request.setInvestedAmount(new BigDecimal("5000"));
         request.setCurrentValue(null);
 
-        when(investmentRepository.save(any())).thenAnswer(invocation -> {
-            Investment inv = invocation.getArgument(0);
+        when(investmentRepository.save(anyLong(), any())).thenAnswer(invocation -> {
+            Investment inv = invocation.getArgument(1);
             inv.setId(2L);
             return inv;
         });
@@ -109,7 +114,7 @@ class InvestmentServiceTest {
         investmentService.create(request);
 
         ArgumentCaptor<Investment> captor = ArgumentCaptor.forClass(Investment.class);
-        verify(investmentRepository).save(captor.capture());
+        verify(investmentRepository).save(eq(1L), captor.capture());
         Investment saved = captor.getValue();
 
         assertEquals(new BigDecimal("5000"), saved.getInvestedAmount());
@@ -132,7 +137,7 @@ class InvestmentServiceTest {
                 () -> investmentService.create(request));
 
         assertTrue(ex.getMessage().contains("quantity and avgBuyPrice"));
-        verify(investmentRepository, never()).save(any());
+        verify(investmentRepository, never()).save(anyLong(), any());
     }
 
     @Test
@@ -148,12 +153,12 @@ class InvestmentServiceTest {
                 () -> investmentService.create(request));
 
         assertTrue(ex.getMessage().contains("investedAmount"));
-        verify(investmentRepository, never()).save(any());
+        verify(investmentRepository, never()).save(anyLong(), any());
     }
 
     @Test
     void findById_whenMissingThrowsResourceNotFound() {
-        when(investmentRepository.findById(42L)).thenReturn(Optional.empty());
+        when(investmentRepository.findById(eq(1L), eq(42L))).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> investmentService.findById(42L));
     }
@@ -165,10 +170,11 @@ class InvestmentServiceTest {
         stock.setCurrentValue(new BigDecimal("1100"));
         stock.setCurrency("USD");
 
-        when(investmentRepository.findAll(InvestmentType.STOCK, "US", InvestmentStatus.ACTIVE))
+        when(investmentRepository.findAll(eq(1L), eq(InvestmentType.STOCK), eq("US"), eq(InvestmentStatus.ACTIVE)))
                 .thenReturn(List.of(stock));
 
-        List<InvestmentResponse> responses = investmentService.findAll(InvestmentType.STOCK, "US", InvestmentStatus.ACTIVE);
+        List<InvestmentResponse> responses = investmentService.findAll(InvestmentType.STOCK, "US",
+                InvestmentStatus.ACTIVE);
 
         assertEquals(1, responses.size());
         assertEquals(1L, responses.get(0).getId());
@@ -196,8 +202,8 @@ class InvestmentServiceTest {
         request.setNotes("updated notes");
         request.setPurchaseDate(null);
 
-        when(investmentRepository.findById(1L)).thenReturn(Optional.of(existing));
-        when(investmentRepository.update(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(investmentRepository.findById(eq(1L), eq(1L))).thenReturn(Optional.of(existing));
+        when(investmentRepository.update(eq(1L), any())).thenAnswer(invocation -> invocation.getArgument(1));
 
         InvestmentResponse response = investmentService.update(1L, request);
 
@@ -211,7 +217,7 @@ class InvestmentServiceTest {
     @Test
     void updatePrice_stockRequiresCurrentPrice() {
         Investment stock = baseInvestment(1L, InvestmentType.STOCK);
-        when(investmentRepository.findById(1L)).thenReturn(Optional.of(stock));
+        when(investmentRepository.findById(eq(1L), eq(1L))).thenReturn(Optional.of(stock));
 
         PriceUpdateRequest request = new PriceUpdateRequest();
         request.setCurrentPrice(null);
@@ -219,7 +225,7 @@ class InvestmentServiceTest {
         InvalidOperationException ex = assertThrows(InvalidOperationException.class,
                 () -> investmentService.updatePrice(1L, request));
         assertTrue(ex.getMessage().contains("currentPrice is required"));
-        verify(investmentRepository, never()).updatePrice(anyLong(), any(), any());
+        verify(investmentRepository, never()).updatePrice(anyLong(), anyLong(), any(), any());
     }
 
     @Test
@@ -228,20 +234,20 @@ class InvestmentServiceTest {
         stock.setQuantity(new BigDecimal("10"));
         stock.setCurrentPrice(new BigDecimal("90"));
 
-        when(investmentRepository.findById(1L)).thenReturn(Optional.of(stock));
+        when(investmentRepository.findById(eq(1L), eq(1L))).thenReturn(Optional.of(stock));
 
         PriceUpdateRequest request = new PriceUpdateRequest();
         request.setCurrentPrice(new BigDecimal("120"));
 
         investmentService.updatePrice(1L, request);
 
-        verify(investmentRepository).updatePrice(eq(1L), eq(new BigDecimal("120")), eq(new BigDecimal("1200")));
+        verify(investmentRepository).updatePrice(eq(1L), eq(1L), eq(new BigDecimal("120")), eq(new BigDecimal("1200")));
     }
 
     @Test
     void updatePrice_fdRequiresCurrentValue() {
         Investment fd = baseInvestment(5L, InvestmentType.FD);
-        when(investmentRepository.findById(5L)).thenReturn(Optional.of(fd));
+        when(investmentRepository.findById(eq(1L), eq(5L))).thenReturn(Optional.of(fd));
 
         PriceUpdateRequest request = new PriceUpdateRequest();
 
@@ -249,38 +255,38 @@ class InvestmentServiceTest {
                 () -> investmentService.updatePrice(5L, request));
 
         assertTrue(ex.getMessage().contains("currentValue is required"));
-        verify(investmentRepository, never()).updatePrice(anyLong(), any(), any());
+        verify(investmentRepository, never()).updatePrice(anyLong(), anyLong(), any(), any());
     }
 
     @Test
     void updatePrice_fdUsesProvidedCurrentValue() {
         Investment fd = baseInvestment(5L, InvestmentType.FD);
         fd.setCurrentPrice(new BigDecimal("1"));
-        when(investmentRepository.findById(5L)).thenReturn(Optional.of(fd));
+        when(investmentRepository.findById(eq(1L), eq(5L))).thenReturn(Optional.of(fd));
 
         PriceUpdateRequest request = new PriceUpdateRequest();
         request.setCurrentValue(new BigDecimal("6400"));
 
         investmentService.updatePrice(5L, request);
 
-        verify(investmentRepository).updatePrice(eq(5L), eq(new BigDecimal("1")), eq(new BigDecimal("6400")));
+        verify(investmentRepository).updatePrice(eq(1L), eq(5L), eq(new BigDecimal("1")), eq(new BigDecimal("6400")));
     }
 
     @Test
     void delete_missingInvestmentThrowsResourceNotFound() {
-        when(investmentRepository.existsById(11L)).thenReturn(false);
+        when(investmentRepository.existsById(eq(1L), eq(11L))).thenReturn(false);
 
         assertThrows(ResourceNotFoundException.class, () -> investmentService.delete(11L));
-        verify(investmentRepository, never()).deleteById(anyLong());
+        verify(investmentRepository, never()).deleteById(anyLong(), anyLong());
     }
 
     @Test
     void delete_existingInvestmentDeletesById() {
-        when(investmentRepository.existsById(11L)).thenReturn(true);
+        when(investmentRepository.existsById(eq(1L), eq(11L))).thenReturn(true);
 
         investmentService.delete(11L);
 
-        verify(investmentRepository).deleteById(11L);
+        verify(investmentRepository).deleteById(eq(1L), eq(11L));
     }
 
     private Investment baseInvestment(Long id, InvestmentType type) {

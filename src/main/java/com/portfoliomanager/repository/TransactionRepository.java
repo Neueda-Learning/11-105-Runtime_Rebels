@@ -23,15 +23,15 @@ public class TransactionRepository {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    public List<Transaction> findByInvestmentId(Long investmentId) {
+    public List<Transaction> findByInvestmentId(Long userId, Long investmentId) {
         return jdbcTemplate.query(
-                "SELECT * FROM transactions WHERE investment_id = ? ORDER BY transaction_date DESC, id DESC",
-                rowMapper, investmentId);
+                "SELECT t.* FROM transactions t JOIN investments i ON i.id = t.investment_id WHERE i.user_id = ? AND t.investment_id = ? ORDER BY t.transaction_date DESC, t.id DESC",
+                rowMapper, userId, investmentId);
     }
 
-    public List<Transaction> findAll() {
+    public List<Transaction> findAll(Long userId) {
         return jdbcTemplate.query(
-                "SELECT * FROM transactions ORDER BY transaction_date DESC, id DESC", rowMapper);
+                "SELECT t.* FROM transactions t JOIN investments i ON i.id = t.investment_id WHERE i.user_id = ? ORDER BY t.transaction_date DESC, t.id DESC", rowMapper, userId);
     }
 
     public Optional<Transaction> findById(Long id) {
@@ -65,9 +65,9 @@ public class TransactionRepository {
     }
 
     /** Sum of realized P/L across all SELL transactions, in instrument currency per row - conversion happens in the service layer. */
-    public List<Transaction> findAllRealizedPlTransactions() {
+    public List<Transaction> findAllRealizedPlTransactions(Long userId) {
         return jdbcTemplate.query(
-                "SELECT * FROM transactions WHERE type = 'SELL' AND realized_pl IS NOT NULL", rowMapper);
+                "SELECT t.* FROM transactions t JOIN investments i ON i.id = t.investment_id WHERE i.user_id = ? AND t.type = 'SELL' AND t.realized_pl IS NOT NULL", rowMapper, userId);
     }
 
     public boolean deleteById(Long id) {
