@@ -65,10 +65,11 @@ public class TransactionService {
     @Transactional
     public TransactionResponse record(Long investmentId, TransactionRequest request) {
         Investment investment = investmentService.getOrThrow(investmentId);
+        TransactionType transactionType = request.getType();
 
         Transaction.TransactionBuilder txBuilder = Transaction.builder()
                 .investmentId(investmentId)
-                .type(request.getType())
+                .type(transactionType)
                 .quantity(request.getQuantity())
                 .price(request.getPrice())
                 .amount(request.getAmount())
@@ -76,12 +77,18 @@ public class TransactionService {
                 .transactionDate(request.getTransactionDate())
                 .notes(request.getNotes());
 
-        switch (request.getType()) {
-            case BUY -> applyBuy(investment, request);
-            case SELL -> txBuilder.realizedPl(applySell(investment, request));
-            case DEPOSIT -> applyDeposit(investment, request);
-            case WITHDRAW -> applyWithdraw(investment, request);
-            case INTEREST -> applyInterest(investment, request);
+        if (transactionType == TransactionType.BUY) {
+            applyBuy(investment, request);
+        } else if (transactionType == TransactionType.SELL) {
+            txBuilder.realizedPl(applySell(investment, request));
+        } else if (transactionType == TransactionType.DEPOSIT) {
+            applyDeposit(investment, request);
+        } else if (transactionType == TransactionType.WITHDRAW) {
+            applyWithdraw(investment, request);
+        } else if (transactionType == TransactionType.INTEREST) {
+            applyInterest(investment, request);
+        } else {
+            throw new InvalidOperationException("Unsupported transaction type: " + transactionType);
         }
 
         investmentRepository.update(currentUserService.getCurrentUserId(), investment);
