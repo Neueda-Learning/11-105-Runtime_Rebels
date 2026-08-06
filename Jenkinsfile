@@ -28,6 +28,7 @@ pipeline {
                         withCredentials([file(credentialsId: params.ENV_CREDENTIAL_ID, variable: 'ENV_FILE')]) {
                             sh '''
                                 cp "$ENV_FILE" .env
+                                sed -i 's/\r$//' .env
                                 chmod 600 .env
                                 test -s .env
                             '''
