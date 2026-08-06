@@ -1,1 +1,7 @@
+User story:
+As a customer, I want to set base currency and exchange rates, so that all reporting reflects my preferred currency.
 
+Acceptance criteria:
+- Given a configured base currency, when dashboard values load, then conversion uses that base currency.
+- Given an exchange rate update, when dashboard recalculates, then latest rates are reflected.
+- Given settings are opened, when I view exchange rates, then configured rates are listed.
