@@ -99,7 +99,7 @@ export function AppProvider({ children }) {
         const code = res?.baseCurrency || res?.currencyCode || res?.currency || res?.code
         if (code) setBaseCurrencyState(code)
       })
-      .catch(() => {})
+      .catch(() => { })
   }, [user])
 
   const value = useMemo(

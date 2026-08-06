@@ -6,7 +6,8 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
- * Permissive CORS setup for now since there is a single user and no authentication
+ * Permissive CORS setup for now since there is a single user and no
+ * authentication
  * (per project notes). Tighten this once a specific front-end origin is known.
  */
 @Configuration

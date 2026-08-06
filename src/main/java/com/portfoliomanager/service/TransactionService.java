@@ -7,6 +7,7 @@ import com.portfoliomanager.model.Investment;
 import com.portfoliomanager.model.InvestmentStatus;
 import com.portfoliomanager.model.InvestmentType;
 import com.portfoliomanager.model.Transaction;
+import com.portfoliomanager.model.TransactionType;
 import com.portfoliomanager.repository.InvestmentRepository;
 import com.portfoliomanager.repository.TransactionRepository;
 import org.springframework.stereotype.Service;

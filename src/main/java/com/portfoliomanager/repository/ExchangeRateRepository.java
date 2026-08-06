@@ -20,17 +20,21 @@ public class ExchangeRateRepository {
     }
 
     public List<ExchangeRate> findAll(Long userId) {
-        return jdbcTemplate.query("SELECT * FROM exchange_rates WHERE user_id = ? ORDER BY currency_code", rowMapper, userId);
+        return jdbcTemplate.query("SELECT * FROM exchange_rates WHERE user_id = ? ORDER BY currency_code", rowMapper,
+                userId);
     }
 
     public Optional<ExchangeRate> findByCurrencyCode(Long userId, String currencyCode) {
-        return jdbcTemplate.query("SELECT * FROM exchange_rates WHERE user_id = ? AND currency_code = ?", rowMapper, userId, currencyCode)
+        return jdbcTemplate
+                .query("SELECT * FROM exchange_rates WHERE user_id = ? AND currency_code = ?", rowMapper, userId,
+                        currencyCode)
                 .stream().findFirst();
     }
 
     public ExchangeRate upsert(Long userId, String currencyCode, BigDecimal rateToBase) {
         int updated = jdbcTemplate.update(
-                "UPDATE exchange_rates SET rate_to_base = ? WHERE user_id = ? AND currency_code = ?", rateToBase, userId, currencyCode);
+                "UPDATE exchange_rates SET rate_to_base = ? WHERE user_id = ? AND currency_code = ?", rateToBase,
+                userId, currencyCode);
         if (updated == 0) {
             jdbcTemplate.update(
                     "INSERT INTO exchange_rates (user_id, currency_code, rate_to_base) VALUES (?,?,?)",

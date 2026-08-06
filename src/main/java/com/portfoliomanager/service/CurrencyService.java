@@ -19,8 +19,8 @@ public class CurrencyService {
     private final CurrentUserService currentUserService;
 
     public CurrencyService(ExchangeRateRepository exchangeRateRepository,
-                           SettingRepository settingRepository,
-                           CurrentUserService currentUserService) {
+            SettingRepository settingRepository,
+            CurrentUserService currentUserService) {
         this.exchangeRateRepository = exchangeRateRepository;
         this.settingRepository = settingRepository;
         this.currentUserService = currentUserService;
@@ -81,7 +81,8 @@ public class CurrencyService {
     }
 
     public ExchangeRate upsertRate(String currencyCode, ExchangeRateRequest request) {
-        return exchangeRateRepository.upsert(currentUserService.getCurrentUserId(), currencyCode.toUpperCase(), request.getRateToBase());
+        return exchangeRateRepository.upsert(currentUserService.getCurrentUserId(), currencyCode.toUpperCase(),
+                request.getRateToBase());
     }
 
     public BigDecimal toBase(BigDecimal amount, String currencyCode) {
