@@ -2,6 +2,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { TrendingUp, TrendingDown, Flag, Clock, Trophy, Sparkles, ArrowDownLeft, ArrowUpRight, PiggyBank, Banknote } from 'lucide-react'
 import { Card, SectionHeading, Skeleton, EmptyState } from '../ui.jsx'
 import { pick, formatPercent, formatCurrency, formatDateTime, classForChange } from '../../utils/format.js'
+import { DEFAULT_MILESTONE_IMAGE, getMilestoneImage } from '../../utils/milestones.js'
 
 const ALLOC_COLORS = ['#E649A1', '#B48CFF', '#F39BC7', '#8E63F4', '#F06292']
 
@@ -161,34 +162,53 @@ export function NextMilestoneCard({
     progressPercent,
     achieved,
   } = milestone;
+  const imageUrl = getMilestoneImage(name)
 
   return (
     <Card className="relative overflow-hidden">
       {/* Background Glow */}
       <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-rose/10 blur-3xl" />
 
-      <SectionHeading
-        eyebrow="Achievement"
-        title="Next Milestone"
-      />
-
-      <div className="mt-4 space-y-4">
-        <div className="flex items-start gap-3">
-          <div className="rounded-xl bg-rose/10 p-3">
-            <Sparkles className="h-5 w-5 text-rose" />
+      <div className="relative grid gap-5 lg:grid-cols-[minmax(0,1.3fr)_220px] lg:items-stretch">
+        <div className="space-y-4">
+          <div>
+            <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+              Achievement
+            </p>
+            <h2 className="font-display text-lg text-ink">Next Milestone</h2>
           </div>
 
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold text-ink">
-              {name}
-            </h3>
+          <div className="flex items-start gap-3 rounded-2xl border border-line/70 bg-paper-sunken/70 p-4">
+            <div className="rounded-xl bg-rose/10 p-3">
+              <Sparkles className="h-5 w-5 text-rose" />
+            </div>
 
-            <p className="mt-1 text-sm text-ink-faint">
-              {comparisonLabel}
-            </p>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-ink">
+                {name}
+              </h3>
+
+              <p className="mt-1 text-sm text-ink-faint">
+                {comparisonLabel}
+              </p>
+            </div>
           </div>
         </div>
 
+        <div className="relative overflow-hidden rounded-2xl border border-line/70 bg-paper-sunken min-h-44">
+          <img
+            src={imageUrl}
+            alt={name}
+            className="h-full w-full object-cover"
+            onError={(event) => {
+              event.currentTarget.src = DEFAULT_MILESTONE_IMAGE
+            }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#1b0a20]/55 via-transparent to-transparent" />
+        </div>
+      </div>
+
+      <div className="mt-5 space-y-4">
         <div className="rounded-xl border border-line bg-paper-sunken p-4">
           <p className="text-xs uppercase tracking-wide text-ink-faint">
             Target Value
