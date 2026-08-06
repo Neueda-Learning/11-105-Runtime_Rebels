@@ -1,0 +1,8 @@
+
+User story:
+As a customer, I want to see all my investments in one dashboard, so that I can understand my total wealth in one place.
+
+Acceptance criteria:
+- Given I hold multiple asset types, when I open the dashboard, then I can see total invested and total current value.
+- Given investments are in different currencies, when values are shown, then totals are converted into my selected base currency.
+- Given there are no investments, when I open the dashboard, then I see a clear empty-state message.
