@@ -845,22 +845,6 @@ SPRING_PROFILES_ACTIVE=dev docker compose up --build
 curl http://localhost:8080/api/dashboard
 ```
 
-### Python Seeder Alternative (idempotent)
-
-If you do not want to reset/replay migrations repeatedly, you can seed mock data
-directly into MySQL using the script in `scripts/seed_mock_data.py`.
-
-```bash
-cd scripts
-pip install -r requirements.txt
-python seed_mock_data.py --host localhost --port 3306 --database portfolio_manager --user portfolio_user --password portfolio_pass
-```
-
-Behavior:
-- Seeds using `V4__seed_demo_portfolio_data.sql`.
-- Adds `app_settings(mock_seed_version=v4)` marker for the seeded user.
-- Skips future runs by default if already seeded; use `--force` to run again.
-
 ---
 
 ## Design Decisions & Trade-offs
