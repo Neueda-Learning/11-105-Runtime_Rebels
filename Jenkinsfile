@@ -1,6 +1,10 @@
 pipeline {
 
     agent any
+
+    parameters {
+        string(name: 'ENV_CREDENTIAL_ID', defaultValue: 'portfolio-env-file', description: 'Jenkins Secret File credential ID for .env')
+    }
     
     environment {
         GIT_URL = 'https://github.com/Neueda-Learning/11-105-Runtime_Rebels.git'
@@ -19,12 +23,18 @@ pipeline {
 
         stage('Prepare Env File') {
             steps {
-                withCredentials([file(credentialsId: 'portfolio-env-file', variable: 'ENV_FILE')]) {
-                    sh '''
-                        cp "$ENV_FILE" .env
-                        chmod 600 .env
-                        test -s .env
-                    '''
+                script {
+                    try {
+                        withCredentials([file(credentialsId: params.ENV_CREDENTIAL_ID, variable: 'ENV_FILE')]) {
+                            sh '''
+                                cp "$ENV_FILE" .env
+                                chmod 600 .env
+                                test -s .env
+                            '''
+                        }
+                    } catch (Exception e) {
+                        error("Unable to load Secret File credential ID '${params.ENV_CREDENTIAL_ID}'. Check credential ID, scope (Folder vs Global), and type (Secret file).")
+                    }
                 }
             }
         }
