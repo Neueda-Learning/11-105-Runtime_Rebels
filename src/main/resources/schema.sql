@@ -1,6 +1,16 @@
 -- Consolidated schema from V1 + V3 migrations
 -- This file defines the final multi-user structure directly (no incremental migrations).
 
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS transactions;
+DROP TABLE IF EXISTS portfolio_snapshots;
+DROP TABLE IF EXISTS milestones;
+DROP TABLE IF EXISTS exchange_rates;
+DROP TABLE IF EXISTS app_settings;
+DROP TABLE IF EXISTS investments;
+DROP TABLE IF EXISTS app_users;
+SET FOREIGN_KEY_CHECKS = 1;
+
 CREATE TABLE IF NOT EXISTS app_users (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     google_subject VARCHAR(64) NOT NULL UNIQUE,
