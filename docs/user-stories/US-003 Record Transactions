@@ -1,1 +1,9 @@
 
+
+User story:
+As a customer, I want to record buy, sell, deposit, withdraw, and interest transactions, so that my portfolio history stays complete.
+
+Acceptance criteria:
+- Given an investment exists, when I add a transaction, then it appears in history with date, type, and amount.
+- Given a BUY transaction, when it is saved, then quantity and weighted average cost are recalculated.
+- Given a SELL transaction, when it is saved, then realized P/L is calculated and stored.
